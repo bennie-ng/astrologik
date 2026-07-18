@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getDayInfo, type DayInfo } from 'lunar-core';
-import { colors, WEEKDAYS_VI } from './theme';
+import { useTheme, WEEKDAYS_VI } from './design';
+import type { Theme } from './design';
 
 interface Props {
   year: number;
@@ -18,14 +20,16 @@ function daysInMonth(year: number, month: number): number {
 }
 
 export default function MonthView({ year, month, today, onSelectDay, onPrev, onNext, onToday }: Props) {
+  const { theme } = useTheme();
+  const s = useMemo(() => styles(theme), [theme]);
+
   const cells = useMemo(() => {
     const n = daysInMonth(year, month);
     const infos: DayInfo[] = [];
     for (let d = 1; d <= n; d++) {
       infos.push(getDayInfo(d, month, year));
     }
-    // Monday-first column index; weekday 0 = Sunday
-    const lead = (infos[0].solar.weekday + 6) % 7;
+    const lead = (infos[0].solar.weekday + 6) % 7; // Monday-first
     return { infos, lead };
   }, [year, month]);
 
@@ -43,120 +47,188 @@ export default function MonthView({ year, month, today, onSelectDay, onPrev, onN
   const monthLunarLabel = useMemo(() => {
     const first = cells.infos[0].lunar;
     const last = cells.infos[cells.infos.length - 1].lunar;
-    const fmt = (l: typeof first) => `${l.month}${l.leap ? ' (n)' : ''}`;
+    const fmt = (l: typeof first) => `${l.month}${l.leap ? ' nhuận' : ''}`;
     return first.month === last.month && first.leap === last.leap
-      ? `Tháng ${fmt(first)} ÂL`
-      : `Tháng ${fmt(first)} – ${fmt(last)} ÂL`;
+      ? `Tháng ${fmt(first)} âm lịch`
+      : `Tháng ${fmt(first)} – ${fmt(last)} âm lịch`;
   }, [cells]);
 
+  const isCurrentMonth = year === today.year && month === today.month;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={onPrev} style={styles.navBtn} accessibilityLabel="Tháng trước">
-          <Text style={styles.navText}>‹</Text>
-        </Pressable>
-        <Pressable onPress={onToday} style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>
-            Tháng {month}/{year}
+    <View style={s.container}>
+      <View style={s.header}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.headerTitle}>
+            Tháng {month} <Text style={s.headerYear}>{year}</Text>
           </Text>
-          <Text style={styles.headerSub}>{monthLunarLabel}</Text>
+          <Text style={s.headerSub}>{monthLunarLabel}</Text>
+        </View>
+        {!isCurrentMonth && (
+          <Pressable onPress={onToday} style={s.todayPill}>
+            <Text style={s.todayPillText}>Hôm nay</Text>
+          </Pressable>
+        )}
+        <Pressable onPress={onPrev} style={s.navBtn} accessibilityLabel="Tháng trước">
+          <Ionicons name="chevron-back" size={20} color={theme.color.text.accent} />
         </Pressable>
-        <Pressable onPress={onNext} style={styles.navBtn} accessibilityLabel="Tháng sau">
-          <Text style={styles.navText}>›</Text>
+        <Pressable onPress={onNext} style={s.navBtn} accessibilityLabel="Tháng sau">
+          <Ionicons name="chevron-forward" size={20} color={theme.color.text.accent} />
         </Pressable>
       </View>
 
-      <View style={styles.weekRow}>
-        {WEEKDAYS_VI.map((w, i) => (
-          <Text
-            key={w}
-            style={[
-              styles.weekday,
-              i === 6 && { color: colors.sunday },
-              i === 5 && { color: colors.saturday },
-            ]}
-          >
-            {w}
-          </Text>
+      <View style={s.card}>
+        <View style={s.weekRow}>
+          {WEEKDAYS_VI.map((w, i) => (
+            <Text
+              key={w}
+              style={[
+                s.weekday,
+                i === 6 && { color: theme.color.weekend.sunday },
+                i === 5 && { color: theme.color.weekend.saturday },
+              ]}
+            >
+              {w}
+            </Text>
+          ))}
+        </View>
+
+        {rows.map((row, ri) => (
+          <View key={ri} style={s.row}>
+            {row.map((info, ci) => {
+              if (!info) return <View key={ci} style={s.cell} />;
+              const isToday =
+                info.solar.day === today.day &&
+                info.solar.month === today.month &&
+                info.solar.year === today.year;
+              const special = info.isMung1 || info.isRam;
+              const holiday = info.holidays.length > 0;
+              return (
+                <Pressable
+                  key={ci}
+                  style={({ pressed }) => [
+                    s.cell,
+                    special && !isToday && s.specialCell,
+                    isToday && s.todayCell,
+                    pressed && s.cellPressed,
+                  ]}
+                  onPress={() => onSelectDay(info)}
+                >
+                  <Text
+                    style={[
+                      s.solarDay,
+                      ci === 6 && { color: theme.color.weekend.sunday },
+                      ci === 5 && { color: theme.color.weekend.saturday },
+                      holiday && { color: theme.color.text.accent },
+                      isToday && s.todayText,
+                    ]}
+                  >
+                    {info.solar.day}
+                  </Text>
+                  <Text style={[s.lunarDay, special && s.lunarSpecial]}>
+                    {info.lunar.day === 1
+                      ? `1/${info.lunar.month}${info.lunar.leap ? 'n' : ''}`
+                      : info.lunar.day}
+                  </Text>
+                  <View
+                    style={[
+                      s.dot,
+                      info.dayStar.auspicious && { backgroundColor: theme.color.state.good },
+                    ]}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
         ))}
       </View>
 
-      {rows.map((row, ri) => (
-        <View key={ri} style={styles.row}>
-          {row.map((info, ci) => {
-            if (!info) return <View key={ci} style={styles.cell} />;
-            const isToday =
-              info.solar.day === today.day &&
-              info.solar.month === today.month &&
-              info.solar.year === today.year;
-            const special = info.isMung1 || info.isRam;
-            const holiday = info.holidays.length > 0;
-            return (
-              <Pressable
-                key={ci}
-                style={[styles.cell, isToday && styles.todayCell]}
-                onPress={() => onSelectDay(info)}
-              >
-                <Text
-                  style={[
-                    styles.solarDay,
-                    ci === 6 && { color: colors.sunday },
-                    ci === 5 && { color: colors.saturday },
-                    holiday && { color: colors.primary },
-                  ]}
-                >
-                  {info.solar.day}
-                </Text>
-                <Text style={[styles.lunarDay, special && styles.lunarSpecial]}>
-                  {info.lunar.day === 1
-                    ? `1/${info.lunar.month}${info.lunar.leap ? 'n' : ''}`
-                    : info.lunar.day}
-                </Text>
-                <View
-                  style={[
-                    styles.dot,
-                    { backgroundColor: info.dayStar.auspicious ? colors.goodDay : 'transparent' },
-                  ]}
-                />
-              </Pressable>
-            );
-          })}
-        </View>
-      ))}
-      <Text style={styles.legend}>● ngày hoàng đạo · chữ nhỏ: ngày âm lịch</Text>
+      <View style={s.legendRow}>
+        <View style={[s.legendDot, { backgroundColor: theme.color.state.good }]} />
+        <Text style={s.legend}>ngày hoàng đạo</Text>
+        <View style={[s.legendSwatch, { backgroundColor: theme.color.bg.goldSoft }]} />
+        <Text style={s.legend}>mùng 1 · rằm</Text>
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { backgroundColor: colors.card, borderRadius: 16, padding: 8, margin: 8 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.primaryDark },
-  headerSub: { fontSize: 13, color: colors.lunar },
-  navBtn: { paddingHorizontal: 18, paddingVertical: 4 },
-  navText: { fontSize: 28, color: colors.primary, fontWeight: '600' },
-  weekRow: { flexDirection: 'row' },
-  weekday: {
-    flex: 1,
-    textAlign: 'center',
-    fontWeight: '700',
-    color: colors.textMuted,
-    paddingVertical: 6,
-    fontSize: 13,
-  },
-  row: { flexDirection: 'row' },
-  cell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 6,
-    borderRadius: 10,
-    minHeight: 54,
-  },
-  todayCell: { backgroundColor: colors.todayBg },
-  solarDay: { fontSize: 17, fontWeight: '600', color: colors.text },
-  lunarDay: { fontSize: 11, color: colors.textMuted },
-  lunarSpecial: { color: colors.lunar, fontWeight: '700' },
-  dot: { width: 4, height: 4, borderRadius: 2, marginTop: 2 },
-  legend: { fontSize: 11, color: colors.textMuted, textAlign: 'center', paddingVertical: 6 },
-});
+const styles = (t: Theme) =>
+  StyleSheet.create({
+    container: { paddingHorizontal: t.space.lg },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingTop: t.space.sm,
+      paddingBottom: t.space.lg,
+      gap: t.space.sm,
+    },
+    headerTitle: { ...t.type.titleXL, color: t.color.text.primary } as object,
+    headerYear: { color: t.color.text.tertiary, fontWeight: '600' },
+    headerSub: { ...t.type.label, color: t.color.text.lunar, marginTop: 2 } as object,
+    todayPill: {
+      backgroundColor: t.color.bg.accentSoft,
+      borderRadius: t.radius.full,
+      paddingHorizontal: t.space.md,
+      paddingVertical: 6,
+    },
+    todayPillText: { ...t.type.label, color: t.color.text.accent } as object,
+    navBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: t.radius.full,
+      backgroundColor: t.color.bg.surface,
+      borderWidth: 1,
+      borderColor: t.color.border.subtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    card: {
+      backgroundColor: t.color.bg.surface,
+      borderRadius: t.radius.lg,
+      borderWidth: 1,
+      borderColor: t.color.border.subtle,
+      padding: t.space.sm,
+      ...t.shadow.card,
+    },
+    weekRow: { flexDirection: 'row', marginBottom: t.space.xs },
+    weekday: {
+      flex: 1,
+      textAlign: 'center',
+      ...t.type.micro,
+      color: t.color.text.tertiary,
+      paddingVertical: t.space.sm,
+    } as object,
+    row: { flexDirection: 'row' },
+    cell: {
+      flex: 1,
+      alignItems: 'center',
+      paddingTop: 7,
+      paddingBottom: 4,
+      margin: 1,
+      borderRadius: t.radius.sm,
+      minHeight: 56,
+    },
+    specialCell: { backgroundColor: t.color.bg.goldSoft },
+    todayCell: {
+      backgroundColor: t.color.bg.accentSoft,
+      borderWidth: 1.5,
+      borderColor: t.color.border.ring,
+    },
+    cellPressed: { backgroundColor: t.color.bg.elevated },
+    solarDay: { fontSize: 17, fontWeight: '600', color: t.color.text.primary },
+    todayText: { color: t.color.text.accent, fontWeight: '800' },
+    lunarDay: { fontSize: 11, color: t.color.text.tertiary, marginTop: 1 },
+    lunarSpecial: { color: t.color.text.lunar, fontWeight: '700' },
+    dot: { width: 4, height: 4, borderRadius: 2, marginTop: 3, backgroundColor: 'transparent' },
+    legendRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: t.space.md,
+    },
+    legendDot: { width: 6, height: 6, borderRadius: 3 },
+    legendSwatch: { width: 12, height: 12, borderRadius: 4, marginLeft: t.space.md },
+    legend: { ...t.type.caption, color: t.color.text.tertiary } as object,
+  });

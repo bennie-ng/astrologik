@@ -1,15 +1,28 @@
 import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { getDayInfo, type DayInfo } from 'lunar-core';
 import MonthView from './src/MonthView';
 import DayDetail from './src/DayDetail';
 import Converter from './src/Converter';
-import { colors } from './src/theme';
+import { ThemeProvider, useTheme } from './src/design';
+import type { Theme } from './src/design';
 
 type Tab = 'calendar' | 'day' | 'convert';
 
 export default function App() {
+  return (
+    <ThemeProvider>
+      <Shell />
+    </ThemeProvider>
+  );
+}
+
+function Shell() {
+  const { theme, toggle } = useTheme();
+  const s = useMemo(() => styles(theme), [theme]);
+
   const today = useMemo(() => {
     const now = new Date();
     return { day: now.getDate(), month: now.getMonth() + 1, year: now.getFullYear() };
@@ -37,13 +50,21 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.root}>
-      <StatusBar style="light" />
-      <View style={styles.appBar}>
-        <Text style={styles.appTitle}>Lịch Vạn Niên</Text>
+    <SafeAreaView style={s.root}>
+      <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
+
+      <View style={s.appBar}>
+        <Text style={s.appTitle}>Lịch Vạn Niên</Text>
+        <Pressable onPress={toggle} style={s.themeBtn} accessibilityLabel="Đổi giao diện sáng/tối">
+          <Ionicons
+            name={theme.scheme === 'dark' ? 'sunny-outline' : 'moon-outline'}
+            size={18}
+            color={theme.color.text.secondary}
+          />
+        </Pressable>
       </View>
 
-      <View style={styles.content}>
+      <View style={s.content}>
         {tab === 'calendar' && (
           <MonthView
             year={viewYear}
@@ -65,10 +86,28 @@ export default function App() {
         {tab === 'convert' && <Converter initial={today} />}
       </View>
 
-      <View style={styles.tabBar}>
-        <TabButton label="Lịch tháng" icon="📅" active={tab === 'calendar'} onPress={() => setTab('calendar')} />
-        <TabButton label="Chi tiết ngày" icon="🌞" active={tab === 'day'} onPress={() => setTab('day')} />
-        <TabButton label="Đổi ngày" icon="🔄" active={tab === 'convert'} onPress={() => setTab('convert')} />
+      <View style={s.tabBar}>
+        <TabButton
+          label="Lịch"
+          icon="calendar"
+          active={tab === 'calendar'}
+          onPress={() => setTab('calendar')}
+          theme={theme}
+        />
+        <TabButton
+          label="Ngày"
+          icon="sunny"
+          active={tab === 'day'}
+          onPress={() => setTab('day')}
+          theme={theme}
+        />
+        <TabButton
+          label="Đổi ngày"
+          icon="swap-horizontal"
+          active={tab === 'convert'}
+          onPress={() => setTab('convert')}
+          theme={theme}
+        />
       </View>
     </SafeAreaView>
   );
@@ -79,40 +118,81 @@ function TabButton({
   icon,
   active,
   onPress,
+  theme,
 }: {
   label: string;
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
   active: boolean;
   onPress: () => void;
+  theme: Theme;
 }) {
+  const color = active ? theme.color.text.onAccent : theme.color.text.tertiary;
   return (
-    <Pressable style={styles.tabBtn} onPress={onPress}>
-      <Text style={styles.tabIcon}>{icon}</Text>
-      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
+    <Pressable
+      onPress={onPress}
+      style={[
+        tabStyles.btn,
+        { borderRadius: theme.radius.full },
+        active && { backgroundColor: theme.color.accent.solid },
+      ]}
+    >
+      <Ionicons name={active ? icon : (`${icon}-outline` as any)} size={18} color={color} />
+      <Text style={[{ ...theme.type.label, color } as object]}>{label}</Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  appBar: {
-    backgroundColor: colors.primary,
-    paddingTop: Platform.OS === 'android' ? 40 : 8,
-    paddingBottom: 12,
-    alignItems: 'center',
-  },
-  appTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
-  content: { flex: 1, maxWidth: 520, width: '100%', alignSelf: 'center' },
-  tabBar: {
+const tabStyles = StyleSheet.create({
+  btn: {
     flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-    paddingTop: 6,
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  tabBtn: { flex: 1, alignItems: 'center' },
-  tabIcon: { fontSize: 20 },
-  tabLabel: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  tabLabelActive: { color: colors.primary, fontWeight: '700' },
 });
+
+const styles = (t: Theme) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.color.bg.canvas },
+    appBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: t.space.lg,
+      paddingTop: t.space.xl,
+      paddingBottom: t.space.xs,
+      maxWidth: 560,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    appTitle: {
+      ...t.type.micro,
+      color: t.color.text.tertiary,
+      letterSpacing: 2,
+    } as object,
+    themeBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: t.radius.full,
+      backgroundColor: t.color.bg.surface,
+      borderWidth: 1,
+      borderColor: t.color.border.subtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    content: { flex: 1, maxWidth: 560, width: '100%', alignSelf: 'center' },
+    tabBar: {
+      position: 'absolute',
+      bottom: t.space.xl,
+      alignSelf: 'center',
+      flexDirection: 'row',
+      backgroundColor: t.color.bg.surface,
+      borderRadius: t.radius.full,
+      borderWidth: 1,
+      borderColor: t.color.border.subtle,
+      padding: 5,
+      gap: 2,
+      ...t.shadow.floating,
+    },
+  });
