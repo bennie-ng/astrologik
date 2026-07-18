@@ -2,82 +2,85 @@
  * Primitive color palette — the raw scales of the design system.
  *
  * Components never import these directly; they consume semantic tokens
- * from `tokens.ts`. Scales are named after traditional Vietnamese
- * materials: son (vermilion lacquer), hoàng kim (gold), ngọc (jade),
- * mực (ink) and biển (sea indigo).
+ * from `tokens.ts`.
+ *
+ * Direction: "sơn mài" — Vietnamese lacquerware. Deep crimson lacquer,
+ * antique gold leaf, celadon jade, indigo dye (chàm) and porcelain/ink
+ * neutrals. Rich and desaturated rather than bright: gold is a precious
+ * accent, crimson is deep, surfaces feel like porcelain and lacquer.
  */
 
 export const palette = {
-  /** Sơn — vermilion red. Brand + festive accent (Tết red). */
+  /** Sơn — deep lacquer crimson. Brand accent, used with restraint. */
   son: {
-    50: '#FDF3F1',
-    100: '#FBE3DF',
-    200: '#F7C5BD',
-    300: '#EF998C',
-    400: '#E56A58',
-    500: '#D64533',
-    600: '#B93425',
-    700: '#97281D',
-    800: '#7A211A',
-    900: '#5C1813',
+    50: '#FAF1F0',
+    100: '#F3DEDC',
+    200: '#E5BCB9',
+    300: '#D08F90',
+    400: '#B25B60',
+    500: '#953C46',
+    600: '#7D2D3B',
+    700: '#64222F',
+    800: '#4C1A25',
+    900: '#38131C',
   },
 
-  /** Hoàng kim — gold. Lunar dates, festive highlights. */
+  /** Hoàng kim — antique gold leaf. The precious metal of the UI. */
   gold: {
-    50: '#FDF8EC',
-    100: '#FAEFD3',
-    200: '#F4DCA4',
-    300: '#EBC46F',
-    400: '#E0A93F',
-    500: '#C98D1B',
-    600: '#A67114',
-    700: '#815610',
-    800: '#5F3F0E',
-    900: '#422B0A',
+    50: '#FAF6EA',
+    100: '#F2EAD0',
+    200: '#E3D5A3',
+    300: '#CFB96F',
+    400: '#B99B47',
+    500: '#A17F2E',
+    600: '#856722',
+    700: '#67501B',
+    800: '#4C3B15',
+    900: '#352910',
   },
 
-  /** Ngọc — jade green. Auspicious (hoàng đạo) signals. */
+  /** Ngọc — celadon jade. Auspicious (hoàng đạo) signals. */
   jade: {
-    50: '#EFFAF4',
-    100: '#D7F2E4',
-    200: '#A9E3C6',
-    300: '#6FCCA2',
-    400: '#3BAF7E',
-    500: '#1F9161',
-    600: '#15754E',
-    700: '#115C3F',
-    800: '#0E4732',
-    900: '#0A3325',
+    50: '#F0F7F2',
+    100: '#DCEDE1',
+    200: '#B8D9C3',
+    300: '#8ABD9D',
+    400: '#5C9C77',
+    500: '#3D7E5B',
+    600: '#2E6549',
+    700: '#25503B',
+    800: '#1D3D2E',
+    900: '#152C22',
   },
 
-  /** Biển — sea indigo. Saturday accent, informational. */
+  /** Chàm — indigo dye. Saturday accent, informational. */
   bien: {
-    50: '#F0F3FD',
-    100: '#DFE6FA',
-    200: '#BCC9F2',
-    300: '#8FA3E7',
-    400: '#5B72E3',
-    500: '#4056C9',
-    600: '#3346A8',
-    700: '#283784',
-    800: '#1F2A64',
-    900: '#161E47',
+    50: '#F1F3F9',
+    100: '#E0E4F1',
+    200: '#BFC7E1',
+    300: '#95A2CB',
+    400: '#6C7DB3',
+    500: '#4F6096',
+    600: '#3F4C79',
+    700: '#323C5F',
+    800: '#262E48',
+    900: '#1B2133',
   },
 
-  /** Mực — warm ink neutrals. Text, surfaces, borders. */
+  /** Mực — porcelain-to-lacquer neutrals. Text, surfaces, borders. */
   ink: {
     0: '#FFFFFF',
-    50: '#FAF7F2',
-    100: '#F3EEE6',
-    200: '#E7DFD3',
-    300: '#D3C8B8',
-    400: '#A99E8D',
-    500: '#837968',
-    600: '#615849',
-    700: '#4A4238',
-    800: '#322C24',
-    850: '#2A241C',
-    900: '#201B15',
-    950: '#16120D',
+    50: '#F6F3EC',
+    100: '#EDE8DD',
+    200: '#DDD5C6',
+    300: '#C2B8A5',
+    400: '#988D7C',
+    500: '#6F6557',
+    600: '#544A40',
+    700: '#3E3630',
+    800: '#2B2422',
+    850: '#231D1D',
+    900: '#1C1718',
+    950: '#141011',
   },
 } as const;

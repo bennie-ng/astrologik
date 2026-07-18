@@ -30,7 +30,7 @@ export default function DayDetail({ info }: { info: DayInfo }) {
           Tháng {solar.month} năm {solar.year}
         </Text>
         <View style={s.lunarBadge}>
-          <Ionicons name="moon" size={13} color="#FCE8C8" />
+          <Ionicons name="moon" size={13} color={theme.color.hero.badge} />
           <Text style={s.lunarBadgeText}>
             {lunar.day}/{lunar.month}
             {lunar.leap ? ' nhuận' : ''} · {canChi.year.name}
@@ -143,25 +143,27 @@ const styles = (t: Theme) =>
       ...t.shadow.floating,
     },
     heroWeekdayPill: {
-      backgroundColor: 'rgba(255,255,255,0.18)',
+      backgroundColor: 'rgba(255,255,255,0.12)',
       borderRadius: t.radius.full,
       paddingHorizontal: t.space.md,
       paddingVertical: 4,
     },
-    heroWeekday: { ...t.type.label, color: '#FFE9E4' } as object,
-    heroDay: { ...t.type.display, fontSize: 72, lineHeight: 80, color: '#FFFFFF' } as object,
-    heroMonth: { ...t.type.body, color: '#FFD9D0', fontFamily: t.font.semibold } as object,
+    heroWeekday: { ...t.type.label, color: t.color.hero.soft } as object,
+    heroDay: { ...t.type.display, fontSize: 72, lineHeight: 80, color: t.color.hero.text } as object,
+    heroMonth: { ...t.type.body, color: t.color.hero.soft, fontFamily: t.font.semibold } as object,
     lunarBadge: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: 'rgba(0,0,0,0.22)',
+      backgroundColor: 'rgba(0,0,0,0.28)',
       borderRadius: t.radius.full,
+      borderWidth: 1,
+      borderColor: 'rgba(207,185,111,0.35)',
       paddingHorizontal: t.space.lg,
       paddingVertical: 7,
       marginTop: t.space.md,
     },
-    lunarBadgeText: { ...t.type.label, color: '#FCE8C8' } as object,
+    lunarBadgeText: { ...t.type.label, color: t.color.hero.badge } as object,
     card: {
       backgroundColor: t.color.bg.surface,
       borderRadius: t.radius.lg,

@@ -186,8 +186,8 @@ const styles = (t: Theme) =>
     },
     appTitle: {
       ...t.type.micro,
-      color: t.color.text.tertiary,
-      letterSpacing: 2,
+      color: t.color.text.lunar,
+      letterSpacing: 2.5,
     } as object,
     themeBtn: {
       width: 34,

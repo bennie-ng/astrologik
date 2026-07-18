@@ -15,22 +15,27 @@ src/design/
 
 ## 1. Primitive palette
 
-Five scales named after traditional Vietnamese materials. Each runs 50 (lightest)
-to 900 (darkest).
+**Direction: sơn mài (Vietnamese lacquerware) — premium Asian.** Deep crimson
+lacquer instead of bright vermilion, antique gold leaf instead of orange gold,
+celadon jade, chàm indigo, and porcelain-to-lacquer neutrals. Everything is
+rich and desaturated rather than bright; gold behaves like a precious metal —
+small doses, high impact.
+
+Five scales, each running 50 (lightest) to 900 (darkest):
 
 | Scale | Inspiration | Base (500) | Role |
 |---|---|---|---|
-| `son` | Sơn mài — vermilion lacquer | `#D64533` | Brand & festive accent (Tết red) |
-| `gold` | Hoàng kim — gilded wood | `#C98D1B` | Lunar dates, festive highlights |
-| `jade` | Ngọc — jade | `#1F9161` | Auspicious (hoàng đạo) signals |
-| `bien` | Biển — sea indigo | `#4056C9` | Saturday, informational |
-| `ink` | Mực — warm ink | `#837968` | Text, surfaces, borders (warm neutral, 0–950) |
+| `son` | Sơn mài — deep lacquer crimson | `#953C46` | Brand accent, used with restraint |
+| `gold` | Hoàng kim — antique gold leaf | `#A17F2E` | Lunar layer, wordmark, gilded details |
+| `jade` | Ngọc — celadon jade | `#3D7E5B` | Auspicious (hoàng đạo) signals |
+| `bien` | Chàm — indigo dye | `#4F6096` | Saturday, informational |
+| `ink` | Mực — porcelain → lacquer | `#6F6557` | Text, surfaces, borders (0–950) |
 
 Rules:
 
 - **Primitives are private.** Only `tokens.ts` may import `palette.ts`.
-- Warm neutrals (`ink`) instead of pure gray keep the app feeling like paper
-  and lacquer rather than an office tool.
+- Light theme sits on porcelain ivory (`ink.50 #F6F3EC`), dark theme on
+  lacquer black (`ink.950 #141011`) — never pure white or pure gray.
 
 ## 2. Semantic tokens
 
@@ -47,9 +52,11 @@ Each token exists in light and dark. Highlights (light → dark):
 | `text.secondary` | `ink.600` | `ink.400` | Body copy |
 | `text.tertiary` | `ink.400` | `ink.500` | Captions, lunar day numbers |
 | `text.accent` | `son.600` | `son.300` | Links, holidays, active states |
-| `text.lunar` | `gold.700` | `gold.300` | Lunar-calendar figures |
+| `text.lunar` | `gold.600` | `gold.300` | Lunar figures, wordmark |
+| `text.onAccent` | `#FBF7EE` (ivory) | `#F6EDD9` | Text on filled accent — never pure white |
 | `accent.solid` | `son.600` | `son.500` | Filled buttons, active tab |
-| `accent.gradient` | `son.500→800` | `son.600→900` | Day-detail hero |
+| `accent.gradient` | `son.600→900` | `son.700→#230C12` | Day-detail hero |
+| `hero.text` / `soft` / `badge` | gilded ivory / `#D8BD90` / `gold.200` | `#F2E7CE` / `#CBAE7E` / `gold.300` | Type on the hero gradient |
 | `state.good` | `jade.600` | `jade.300` | Hoàng đạo dot/badge |
 | `state.bad` | `ink.400` | `ink.500` | Hắc đạo (muted, never alarming) |
 | `weekend.sunday` | `son.600` | `son.300` | Sunday column |
@@ -58,9 +65,12 @@ Each token exists in light and dark. Highlights (light → dark):
 
 Semantics worth keeping:
 
-- **Red = festive, not error.** Errors use `state.danger`, applied sparingly.
-- **Gold marks the lunar layer** everywhere (dates, tiết khí, mùng 1/rằm) so
-  the two calendars are visually separable at a glance.
+- **Crimson = brand, not error.** Errors use `state.danger`, applied sparingly.
+- **Gold marks the lunar layer** everywhere (dates, tiết khí, mùng 1/rằm,
+  wordmark) so the two calendars are visually separable at a glance — and gold
+  stays scarce so it keeps its value.
+- **Text on crimson is gilded ivory, never pure white** — the warm cast is
+  what makes the fills read as lacquer instead of "alert red".
 - **Jade = auspicious only.** Hắc đạo is muted neutral, not "bad red" — the
   calendar informs, it doesn't scold.
 - Dark mode is not inverted light mode: accents shift ~2 steps lighter

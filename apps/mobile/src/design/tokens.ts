@@ -37,6 +37,15 @@ export interface ColorTokens {
     /** Hero gradient endpoints */
     gradient: [string, string];
   };
+  /** Text colors on top of the hero gradient */
+  hero: {
+    /** Primary (the big day number) — gilded ivory */
+    text: string;
+    /** Secondary lines */
+    soft: string;
+    /** Gold badge text (lunar date) */
+    badge: string;
+  };
   state: {
     /** Hoàng đạo — auspicious */
     good: string;
@@ -128,14 +137,19 @@ export const lightTheme: Theme = {
       primary: palette.ink[900],
       secondary: palette.ink[600],
       tertiary: palette.ink[400],
-      onAccent: palette.ink[0],
+      onAccent: '#FBF7EE',
       accent: palette.son[600],
-      lunar: palette.gold[700],
+      lunar: palette.gold[600],
     },
     accent: {
       solid: palette.son[600],
       strong: palette.son[700],
-      gradient: [palette.son[500], palette.son[800]],
+      gradient: [palette.son[600], palette.son[900]],
+    },
+    hero: {
+      text: '#F6EDD9',
+      soft: '#D8BD90',
+      badge: palette.gold[200],
     },
     state: {
       good: palette.jade[600],
@@ -182,25 +196,30 @@ export const darkTheme: Theme = {
       canvas: palette.ink[950],
       surface: palette.ink[900],
       elevated: palette.ink[850],
-      accentSoft: '#3A211B',
-      goldSoft: '#3A2E14',
+      accentSoft: '#341C20',
+      goldSoft: '#312814',
     },
     text: {
       primary: palette.ink[100],
       secondary: palette.ink[400],
       tertiary: palette.ink[500],
-      onAccent: palette.ink[0],
+      onAccent: '#F6EDD9',
       accent: palette.son[300],
       lunar: palette.gold[300],
     },
     accent: {
       solid: palette.son[500],
       strong: palette.son[400],
-      gradient: [palette.son[600], palette.son[900]],
+      gradient: [palette.son[700], '#230C12'],
+    },
+    hero: {
+      text: '#F2E7CE',
+      soft: '#CBAE7E',
+      badge: palette.gold[300],
     },
     state: {
       good: palette.jade[300],
-      goodSoft: '#123526',
+      goodSoft: '#16301F',
       bad: palette.ink[500],
       danger: palette.son[400],
     },
