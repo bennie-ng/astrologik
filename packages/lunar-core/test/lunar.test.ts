@@ -6,6 +6,8 @@ import {
   jdFromDate,
   lunarMonthLength,
   lunarToSolar,
+  napAm,
+  sexagenaryIndex,
   solarTerm,
   solarToLunar,
   yearCanChi,
@@ -145,6 +147,36 @@ describe('lunarMonthLength', () => {
       const len = lunarMonthLength(m, 2024);
       expect([29, 30]).toContain(len);
     }
+  });
+});
+
+describe('ngũ hành (nạp âm)', () => {
+  it('maps well-known years correctly', () => {
+    const yearNapAm = (y: number) => {
+      const cc = yearCanChi(y);
+      return napAm(cc.canIndex, cc.chiIndex);
+    };
+    expect(yearNapAm(1984)).toEqual({ name: 'Hải Trung Kim', element: 'Kim' }); // Giáp Tý
+    expect(yearNapAm(1990)).toEqual({ name: 'Lộ Bàng Thổ', element: 'Thổ' }); // Canh Ngọ
+    expect(yearNapAm(1996)).toEqual({ name: 'Giản Hạ Thủy', element: 'Thủy' }); // Bính Tý
+    expect(yearNapAm(2000)).toEqual({ name: 'Bạch Lạp Kim', element: 'Kim' }); // Canh Thìn
+    expect(yearNapAm(2024)).toEqual({ name: 'Phúc Đăng Hỏa', element: 'Hỏa' }); // Giáp Thìn
+    expect(yearNapAm(2025)).toEqual({ name: 'Phúc Đăng Hỏa', element: 'Hỏa' }); // Ất Tỵ
+  });
+
+  it('computes the day element (2000-01-01 Mậu Ngọ → Thiên Thượng Hỏa)', () => {
+    const cc = dayCanChi(jdFromDate(1, 1, 2000));
+    expect(napAm(cc.canIndex, cc.chiIndex)).toEqual({
+      name: 'Thiên Thượng Hỏa',
+      element: 'Hỏa',
+    });
+  });
+
+  it('sexagenaryIndex round-trips the full 60-cycle', () => {
+    for (let n = 0; n < 60; n++) {
+      expect(sexagenaryIndex(n % 10, n % 12)).toBe(n);
+    }
+    expect(() => sexagenaryIndex(0, 1)).toThrow(); // Giáp Sửu does not exist
   });
 });
 

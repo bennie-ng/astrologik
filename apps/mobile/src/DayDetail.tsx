@@ -2,14 +2,22 @@ import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import type { DayInfo } from 'lunar-core';
+import type { DayInfo, NapAm } from 'lunar-core';
 import { useTheme, WEEKDAY_FULL_VI } from './design';
 import type { Theme } from './design';
+
+const ELEMENT_KEY: Record<string, keyof Theme['color']['element']> = {
+  Kim: 'kim',
+  Mộc: 'moc',
+  Thủy: 'thuy',
+  Hỏa: 'hoa',
+  Thổ: 'tho',
+};
 
 export default function DayDetail({ info }: { info: DayInfo }) {
   const { theme } = useTheme();
   const s = useMemo(() => styles(theme), [theme]);
-  const { solar, lunar, canChi, dayStar, auspiciousHours, solarTerm, holidays } = info;
+  const { solar, lunar, canChi, element, dayStar, auspiciousHours, solarTerm, holidays } = info;
 
   return (
     <ScrollView
@@ -59,9 +67,13 @@ export default function DayDetail({ info }: { info: DayInfo }) {
           <Item label="Tháng" value={canChi.month.name} s={s} />
           <Item label="Năm" value={canChi.year.name} s={s} />
         </View>
-        <View style={s.termRow}>
-          <Ionicons name="leaf-outline" size={14} color={theme.color.text.lunar} />
-          <Text style={s.term}>Tiết {solarTerm}</Text>
+        <View style={s.chipsWrap}>
+          <View style={s.chip}>
+            <Ionicons name="leaf-outline" size={14} color={theme.color.text.lunar} />
+            <Text style={[s.chipText, { color: theme.color.text.lunar }]}>Tiết {solarTerm}</Text>
+          </View>
+          <ElementChip label="Ngày" item={element.day} s={s} theme={theme} />
+          <ElementChip label="Năm" item={element.year} s={s} theme={theme} />
         </View>
       </View>
 
@@ -124,6 +136,28 @@ function SectionTitle({ icon, title, theme }: { icon: any; title: string; theme:
   );
 }
 
+function ElementChip({
+  label,
+  item,
+  s,
+  theme,
+}: {
+  label: string;
+  item: NapAm;
+  s: any;
+  theme: Theme;
+}) {
+  const color = theme.color.element[ELEMENT_KEY[item.element]];
+  return (
+    <View style={s.chip}>
+      <View style={[s.elementDot, { backgroundColor: color }]} />
+      <Text style={s.chipText}>
+        {label}: {item.name}
+      </Text>
+    </View>
+  );
+}
+
 function Item({ label, value, s }: { label: string; value: string; s: any }) {
   return (
     <View style={{ alignItems: 'center', flex: 1 }}>
@@ -149,7 +183,7 @@ const styles = (t: Theme) =>
       paddingVertical: 4,
     },
     heroWeekday: { ...t.type.label, color: t.color.hero.soft } as object,
-    heroDay: { ...t.type.display, fontSize: 64, lineHeight: 72, color: t.color.hero.text } as object,
+    heroDay: { ...t.type.display, lineHeight: 56, color: t.color.hero.text } as object,
     heroMonth: { ...t.type.body, color: t.color.hero.soft, ...t.face.semibold } as object,
     lunarBadge: {
       flexDirection: 'row',
@@ -177,18 +211,23 @@ const styles = (t: Theme) =>
     rowBetween: { flexDirection: 'row' },
     itemLabel: { ...t.type.micro, color: t.color.text.tertiary } as object,
     itemValue: { ...t.type.headline, color: t.color.text.primary, marginTop: 4 } as object,
-    termRow: {
+    chipsWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: t.space.sm,
+      marginTop: t.space.lg,
+    },
+    chip: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginTop: t.space.lg,
-      alignSelf: 'flex-start',
       backgroundColor: t.color.bg.elevated,
       borderRadius: t.radius.full,
       paddingHorizontal: t.space.md,
       paddingVertical: 5,
     },
-    term: { ...t.type.caption, color: t.color.text.lunar, ...t.face.semibold } as object,
+    chipText: { ...t.type.caption, color: t.color.text.secondary, ...t.face.semibold } as object,
+    elementDot: { width: 8, height: 8, borderRadius: 4 },
     starHeader: { flexDirection: 'row', alignItems: 'center', gap: t.space.md },
     starBadge: {
       flexDirection: 'row',

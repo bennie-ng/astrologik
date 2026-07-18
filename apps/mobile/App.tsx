@@ -14,7 +14,7 @@ import { getDayInfo, type DayInfo } from 'lunar-core';
 import MonthView from './src/MonthView';
 import DayDetail from './src/DayDetail';
 import Converter from './src/Converter';
-import { ThemeProvider, useTheme } from './src/design';
+import { FadeIn, ThemeProvider, useTheme } from './src/design';
 import type { Theme } from './src/design';
 
 type Tab = 'calendar' | 'day' | 'convert';
@@ -83,12 +83,13 @@ function Shell() {
         </Pressable>
       </View>
 
-      <View style={s.content}>
+      <FadeIn trigger={tab} style={s.content}>
         {tab === 'calendar' && (
           <MonthView
             year={viewYear}
             month={viewMonth}
             today={today}
+            selectedJd={selected.lunar.jd}
             onPrev={() => goMonth(-1)}
             onNext={() => goMonth(1)}
             onToday={() => {
@@ -103,7 +104,7 @@ function Shell() {
         )}
         {tab === 'day' && <DayDetail info={selected} />}
         {tab === 'convert' && <Converter initial={today} />}
-      </View>
+      </FadeIn>
 
       <View style={s.tabBarShadow}>
         <BlurView

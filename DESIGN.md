@@ -87,7 +87,9 @@ Success `#1DB954` · Error `#E34B4B` · Warning `#F59E0B` · Info `#3B82F6`.
 ### Ngũ hành (Five Elements) — muted
 
 Kim `#B9A56B` · Mộc `#3FA66B` · Thủy `#4A7DFF` · Hỏa `#E85D5D` · Thổ `#B68C58`
-(`color.element.*`, reserved for the day-detail element display).
+(`color.element.*`). Displayed in the day-detail Can chi card as colored-dot
+chips with the day's and year's nạp âm (computed by `lunar-core`'s
+`napAm()` from the sexagenary cycle).
 
 ### Zodiac indicators
 
@@ -104,7 +106,7 @@ Components never write raw `fontFamily`/`fontWeight`.
 
 | Token | Size / face | Spec name |
 |---|---|---|
-| `display` | 48–64 / bold | Large Date |
+| `display` | 48 / bold | Large Date |
 | `titleXL` | 34 / bold | Large Title |
 | `title` | 22 / bold | Title 2 |
 | `headline` | 17 / semibold | Body-emphasized |
@@ -143,7 +145,8 @@ bar (micro-caps wordmark + theme toggle).
   holidays have the banner card, today has ring + wash.
 - Light/dark follow the system scheme automatically.
 
-## 7. Motion (to implement)
+## 7. Motion
 
-150–250 ms, ease-out; month switching, date selection, sheet presentation.
-Respect Reduce Motion.
+200 ms ease-out fade-and-rise (`FadeIn` in `src/design/motion.tsx`) on tab
+transitions and month switching. `useReduceMotion()` tracks the system
+Reduce Motion setting and renders statically when enabled.
