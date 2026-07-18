@@ -164,7 +164,7 @@ const styles = (t: Theme) =>
       gap: t.space.sm,
     },
     headerTitle: { ...t.type.titleXL, color: t.color.text.primary } as object,
-    headerYear: { color: t.color.text.tertiary, fontWeight: '600' },
+    headerYear: { color: t.color.text.tertiary, fontFamily: t.font.semibold },
     headerSub: { ...t.type.label, color: t.color.text.lunar, marginTop: 2 } as object,
     todayPill: {
       backgroundColor: t.color.bg.accentSoft,
@@ -216,10 +216,10 @@ const styles = (t: Theme) =>
       borderColor: t.color.border.ring,
     },
     cellPressed: { backgroundColor: t.color.bg.elevated },
-    solarDay: { fontSize: 17, fontWeight: '600', color: t.color.text.primary },
-    todayText: { color: t.color.text.accent, fontWeight: '800' },
-    lunarDay: { fontSize: 11, color: t.color.text.tertiary, marginTop: 1 },
-    lunarSpecial: { color: t.color.text.lunar, fontWeight: '700' },
+    solarDay: { fontSize: 17, fontFamily: t.font.semibold, color: t.color.text.primary },
+    todayText: { color: t.color.text.accent, fontFamily: t.font.extrabold },
+    lunarDay: { fontSize: 11, fontFamily: t.font.regular, color: t.color.text.tertiary, marginTop: 1 },
+    lunarSpecial: { color: t.color.text.lunar, fontFamily: t.font.bold },
     dot: { width: 4, height: 4, borderRadius: 2, marginTop: 3, backgroundColor: 'transparent' },
     legendRow: {
       flexDirection: 'row',

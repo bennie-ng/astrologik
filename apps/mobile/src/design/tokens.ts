@@ -64,11 +64,25 @@ export interface Theme {
   space: typeof space;
   radius: typeof radius;
   type: typeof type;
+  font: typeof font;
   shadow: {
     card: object;
     floating: object;
   };
 }
+
+/**
+ * Brand typeface: Be Vietnam Pro (weight-specific families, loaded in App).
+ * Custom fonts on native ignore `fontWeight`, so weight is always expressed
+ * by picking a family — components use these tokens, never raw fontWeight.
+ */
+export const font = {
+  regular: 'BeVietnamPro_400Regular',
+  medium: 'BeVietnamPro_500Medium',
+  semibold: 'BeVietnamPro_600SemiBold',
+  bold: 'BeVietnamPro_700Bold',
+  extrabold: 'BeVietnamPro_800ExtraBold',
+} as const;
 
 /** 4pt spacing scale. */
 export const space = {
@@ -88,16 +102,16 @@ export const radius = {
   full: 999,
 } as const;
 
-/** Type scale (system font). */
+/** Type scale (Be Vietnam Pro). */
 export const type = {
-  display: { fontSize: 44, fontWeight: '800', letterSpacing: -1.5 },
-  titleXL: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
-  title: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
-  headline: { fontSize: 16, fontWeight: '700' },
-  body: { fontSize: 15, fontWeight: '400' },
-  label: { fontSize: 13, fontWeight: '600' },
-  caption: { fontSize: 12, fontWeight: '500' },
-  micro: { fontSize: 11, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase' },
+  display: { fontSize: 44, fontFamily: font.extrabold, letterSpacing: -1.5 },
+  titleXL: { fontSize: 26, fontFamily: font.extrabold, letterSpacing: -0.5 },
+  title: { fontSize: 20, fontFamily: font.bold, letterSpacing: -0.3 },
+  headline: { fontSize: 16, fontFamily: font.bold },
+  body: { fontSize: 15, fontFamily: font.regular },
+  label: { fontSize: 13, fontFamily: font.semibold },
+  caption: { fontSize: 12, fontFamily: font.medium },
+  micro: { fontSize: 11, fontFamily: font.semibold, letterSpacing: 0.6, textTransform: 'uppercase' },
 } as const;
 
 export const lightTheme: Theme = {
@@ -139,6 +153,7 @@ export const lightTheme: Theme = {
       ring: palette.son[600],
     },
   },
+  font,
   space,
   radius,
   type,
@@ -199,6 +214,7 @@ export const darkTheme: Theme = {
       ring: palette.son[400],
     },
   },
+  font,
   space,
   radius,
   type,

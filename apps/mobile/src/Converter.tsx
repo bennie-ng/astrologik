@@ -212,7 +212,7 @@ const styles = (t: Theme) =>
       paddingHorizontal: t.space.md,
       paddingVertical: t.space.md,
       fontSize: 18,
-      fontWeight: '600',
+      fontFamily: t.font.semibold,
       color: t.color.text.primary,
       backgroundColor: t.color.bg.elevated,
     },
@@ -242,6 +242,6 @@ const styles = (t: Theme) =>
       paddingHorizontal: t.space.sm,
       paddingVertical: 3,
     },
-    resultTagText: { ...t.type.caption, fontWeight: '700' } as object,
+    resultTagText: { ...t.type.caption, fontFamily: t.font.bold } as object,
     error: { ...t.type.label, color: t.color.state.danger, textAlign: 'center' } as object,
   });

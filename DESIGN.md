@@ -76,18 +76,25 @@ Semantics worth keeping:
 
 ## 4. Typography
 
-System font stack, single family; hierarchy comes from size/weight only:
+Brand typeface: **[Be Vietnam Pro](https://fonts.google.com/specimen/Be+Vietnam+Pro)**
+— a Google Font designed in Vietnam with first-class diacritic support. Loaded
+via `@expo-google-fonts/be-vietnam-pro` in `App.tsx` (weights 400–800).
 
-| Token | Size / weight | Used for |
+Custom fonts on native ignore `fontWeight`, so weight is always expressed by
+picking a weight-specific family through the `font` tokens
+(`font.regular … font.extrabold`) — components never write `fontWeight` or a
+raw family name.
+
+| Token | Size / family | Used for |
 |---|---|---|
-| `display` | 44–72 / 800 | Hero day number |
-| `titleXL` | 26 / 800 | Screen titles ("Tháng 7") |
-| `title` | 20 / 700 | Converter result |
-| `headline` | 16 / 700 | Card titles, can chi values |
-| `body` | 15 / 400 | Copy |
-| `label` | 13 / 600 | Pills, tabs, badges |
-| `caption` | 12 / 500 | Secondary metadata |
-| `micro` | 11 / 600 upper, +0.6 tracking | Column headers, field labels |
+| `display` | 44–72 / `font.extrabold` | Hero day number |
+| `titleXL` | 26 / `font.extrabold` | Screen titles ("Tháng 7") |
+| `title` | 20 / `font.bold` | Converter result |
+| `headline` | 16 / `font.bold` | Card titles, can chi values |
+| `body` | 15 / `font.regular` | Copy |
+| `label` | 13 / `font.semibold` | Pills, tabs, badges |
+| `caption` | 12 / `font.medium` | Secondary metadata |
+| `micro` | 11 / `font.semibold` upper, +0.6 tracking | Column headers, field labels |
 
 ## 5. Interface patterns
 

@@ -1,5 +1,14 @@
 export { palette } from './palette';
-export { lightTheme, darkTheme, space, radius, type, type Theme, type ColorTokens } from './tokens';
+export {
+  lightTheme,
+  darkTheme,
+  space,
+  radius,
+  type,
+  font,
+  type Theme,
+  type ColorTokens,
+} from './tokens';
 export { ThemeProvider, useTheme } from './ThemeContext';
 
 export const WEEKDAYS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];

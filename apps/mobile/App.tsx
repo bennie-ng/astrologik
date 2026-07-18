@@ -2,6 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  useFonts,
+  BeVietnamPro_400Regular,
+  BeVietnamPro_500Medium,
+  BeVietnamPro_600SemiBold,
+  BeVietnamPro_700Bold,
+  BeVietnamPro_800ExtraBold,
+} from '@expo-google-fonts/be-vietnam-pro';
 import { getDayInfo, type DayInfo } from 'lunar-core';
 import MonthView from './src/MonthView';
 import DayDetail from './src/DayDetail';
@@ -12,6 +20,16 @@ import type { Theme } from './src/design';
 type Tab = 'calendar' | 'day' | 'convert';
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    BeVietnamPro_400Regular,
+    BeVietnamPro_500Medium,
+    BeVietnamPro_600SemiBold,
+    BeVietnamPro_700Bold,
+    BeVietnamPro_800ExtraBold,
+  });
+  if (!fontsLoaded) {
+    return null;
+  }
   return (
     <ThemeProvider>
       <Shell />

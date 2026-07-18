@@ -150,7 +150,7 @@ const styles = (t: Theme) =>
     },
     heroWeekday: { ...t.type.label, color: '#FFE9E4' } as object,
     heroDay: { ...t.type.display, fontSize: 72, lineHeight: 80, color: '#FFFFFF' } as object,
-    heroMonth: { ...t.type.body, color: '#FFD9D0', fontWeight: '600' } as object,
+    heroMonth: { ...t.type.body, color: '#FFD9D0', fontFamily: t.font.semibold } as object,
     lunarBadge: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -188,7 +188,7 @@ const styles = (t: Theme) =>
       paddingHorizontal: t.space.md,
       paddingVertical: 5,
     },
-    term: { ...t.type.caption, color: t.color.text.lunar, fontWeight: '600' } as object,
+    term: { ...t.type.caption, color: t.color.text.lunar, fontFamily: t.font.semibold } as object,
     starHeader: { flexDirection: 'row', alignItems: 'center', gap: t.space.md },
     starBadge: {
       flexDirection: 'row',
