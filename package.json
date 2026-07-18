@@ -1,0 +1,15 @@
+{
+  "name": "lich-van-nien",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "npm run test -w lunar-core",
+    "typecheck": "npm run typecheck -w lunar-core",
+    "web": "npm run web -w mobile",
+    "start": "npm run start -w mobile"
+  }
+}
