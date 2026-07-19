@@ -1,5 +1,12 @@
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   LUNAR_HOLIDAYS,
@@ -45,7 +52,9 @@ function holidayKeys(year: number): Set<string> {
 
 export default function YearView({ year, today, onSelectMonth, onPrev, onNext, onThisYear }: Props) {
   const { theme } = useTheme();
-  const s = useMemo(() => styles(theme), [theme]);
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
+  const s = useMemo(() => styles(theme, isWide), [theme, isWide]);
   const holidays = useMemo(() => holidayKeys(year), [year]);
   const canChi = useMemo(() => {
     const cc = yearCanChi(year);
@@ -53,7 +62,10 @@ export default function YearView({ year, today, onSelectMonth, onPrev, onNext, o
   }, [year]);
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }}>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: isWide ? theme.space.xl : 120 }}
+    >
       <View style={s.container}>
         <View style={s.header}>
           <Text style={s.headerTitle} numberOfLines={1}>
@@ -159,7 +171,7 @@ function MiniMonth({
   );
 }
 
-const styles = (t: Theme) =>
+const styles = (t: Theme, isWide = false) =>
   StyleSheet.create({
     container: { paddingHorizontal: t.space.lg },
     header: {
@@ -194,8 +206,8 @@ const styles = (t: Theme) =>
       gap: t.space.sm,
     },
     miniMonth: {
-      // three columns with two gaps of space.sm between them
-      flexBasis: '31%',
+      // three columns on phones, four on desktop
+      flexBasis: isWide ? '23%' : '31%',
       flexGrow: 1,
       backgroundColor: t.color.bg.surface,
       borderRadius: t.radius.card,

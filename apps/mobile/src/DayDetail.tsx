@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import type { DayInfo, NapAm } from 'lunar-core';
@@ -17,12 +17,16 @@ const ELEMENT_KEY: Record<string, keyof Theme['color']['element']> = {
 export default function DayDetail({ info }: { info: DayInfo }) {
   const { theme } = useTheme();
   const s = useMemo(() => styles(theme), [theme]);
+  const { width } = useWindowDimensions();
   const { solar, lunar, canChi, element, dayStar, auspiciousHours, solarTerm, holidays } = info;
 
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ paddingHorizontal: theme.space.lg, paddingBottom: 120 }}
+      contentContainerStyle={{
+        paddingHorizontal: theme.space.lg,
+        paddingBottom: width >= 900 ? theme.space.xl : 120,
+      }}
     >
       <LinearGradient
         colors={theme.color.accent.gradient}
