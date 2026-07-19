@@ -51,20 +51,20 @@ Static web build: `npm run build` (root) → `apps/mobile/dist`.
 
 ## Deployment (web)
 
-Hosted on **Cloudflare Pages** via the Git integration — every push to the
-production branch builds and deploys automatically; no API tokens involved.
+Hosted on **Cloudflare Workers (static assets)** via the Git integration —
+every push to `main` builds and deploys automatically; no API tokens involved.
 
-Dashboard configuration (Workers & Pages → Create → Pages → Connect to Git):
+Dashboard configuration (Workers & Pages → Create → Connect to Git):
 
 | Setting | Value |
 |---|---|
-| Root directory | `/` (repo root — required so the `lunar-core` workspace links locally) |
 | Build command | `npm run build` |
-| Build output directory | `apps/mobile/dist` |
+| Deploy command | `npx wrangler deploy` |
 
-Node version is pinned by `.nvmrc` (22), which Cloudflare Pages respects.
-Custom domains are attached once in the dashboard (Pages project → Custom
-domains); CI never needs DNS access.
+`wrangler.jsonc` at the repo root points the deploy at `apps/mobile/dist`
+(SPA fallback enabled). The build must run from the repo root so the
+`lunar-core` workspace links locally. Node version is pinned by `.nvmrc`.
+Custom domains are attached once in the dashboard; CI never needs DNS access.
 
 ## Roadmap
 

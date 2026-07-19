@@ -12,5 +12,8 @@
     "web": "npm run web -w mobile",
     "start": "npm run start -w mobile",
     "build": "npm run build -w mobile"
+  },
+  "devDependencies": {
+    "wrangler": "^4.112.0"
   }
 }
