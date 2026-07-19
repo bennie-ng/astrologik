@@ -1,5 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getDayInfo, lunarToSolar, solarToLunar, yearCanChi } from 'lunar-core';
 import { useTheme, WEEKDAY_FULL_VI } from './design';
@@ -10,6 +18,8 @@ type Direction = 'solar2lunar' | 'lunar2solar';
 export default function Converter({ initial }: { initial: { day: number; month: number; year: number } }) {
   const { theme } = useTheme();
   const s = useMemo(() => styles(theme), [theme]);
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
   const [direction, setDirection] = useState<Direction>('solar2lunar');
   const [day, setDay] = useState(String(initial.day));
   const [month, setMonth] = useState(String(initial.month));
@@ -53,7 +63,13 @@ export default function Converter({ initial }: { initial: { day: number; month: 
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ paddingHorizontal: theme.space.lg, paddingBottom: 120 }}
+      contentContainerStyle={{
+        paddingHorizontal: theme.space.lg,
+        paddingBottom: isWide ? theme.space.xl : 120,
+        maxWidth: 560,
+        width: '100%',
+        alignSelf: 'center',
+      }}
     >
       <Text style={s.pageTitle}>Đổi ngày</Text>
 
