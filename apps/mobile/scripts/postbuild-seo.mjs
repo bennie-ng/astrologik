@@ -34,6 +34,7 @@ const head = `
     <link rel="canonical" href="${SITE_URL}/" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#8A4B3C" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B0D10" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Astrologik" />
     <meta property="og:locale" content="vi_VN" />
@@ -86,9 +87,11 @@ writeFileSync(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${S
 // sitemap.xml is served dynamically by the Worker (it lists the per-day
 // /am-lich pages) — a static file here would shadow it, so none is written.
 
-const ogSrc = join(root, 'web', 'og-image.png');
-if (existsSync(ogSrc)) {
-  copyFileSync(ogSrc, join(dist, 'og-image.png'));
+for (const f of ['og-image.png', 'apple-touch-icon.png']) {
+  const src = join(root, 'web', f);
+  if (existsSync(src)) {
+    copyFileSync(src, join(dist, f));
+  }
 }
 
 console.log('SEO postbuild done:', htmlPath);

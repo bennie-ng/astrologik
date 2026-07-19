@@ -65,6 +65,7 @@ function dayPage(info: DayInfo): string {
 <meta name="description" content="${esc(description)}" />
 <link rel="canonical" href="${url}" />
 <link rel="icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <meta name="theme-color" content="#8A4B3C" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="Astrologik" />
