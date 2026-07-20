@@ -362,18 +362,22 @@ function CenterRow({ label, value, s }: { label: string; value: string; s: any }
 }
 
 function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: any; theme: Theme }) {
+  const [detail, setDetail] = useState<number | null>(null);
   return (
     <View style={s.boardWrap}>
       <View style={s.board}>
         {chart.palaces.map((p) => {
           const [row, col] = GRID_POS[p.chiIndex];
           return (
-            <View
+            <Pressable
               key={p.chiIndex}
-              style={[
+              onPress={() => setDetail(p.chiIndex)}
+              accessibilityLabel={`Cung ${p.cung}`}
+              style={({ pressed }) => [
                 s.palace,
                 { top: `${row * 25}%`, left: `${col * 25}%` },
                 p.cung === 'Mệnh' && s.palaceMenh,
+                pressed && { backgroundColor: theme.color.bg.elevated },
               ]}
             >
               <View style={s.palaceHead}>
@@ -429,7 +433,7 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
                 );
               })()}
               <Text style={s.palaceTrangSinh}>{p.trangSinh}</Text>
-            </View>
+            </Pressable>
           );
         })}
 
@@ -470,13 +474,83 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
           <CenterRow label="Chủ thân" value={chart.thanChu} s={s} />
         </View>
       </View>
+      <PalaceSheet
+        palace={detail !== null ? chart.palaces[detail] : null}
+        chart={chart}
+        onClose={() => setDetail(null)}
+        s={s}
+        theme={theme}
+      />
       <Text style={s.note}>
-        Số ở góc phải mỗi cung là tuổi khởi đại vận (10 năm). Trong mỗi cung, phụ tinh xếp hai cột:
+        Chạm vào một cung để xem đầy đủ các sao. Số ở góc phải mỗi cung là tuổi khởi đại vận (10
+        năm). Trong mỗi cung, phụ tinh xếp hai cột:
         trái là cát tinh, phải là hung tinh; màu chữ theo ngũ hành của sao (Kim vàng đồng · Mộc xanh
         lá · Thủy xanh dương · Hỏa đỏ · Thổ nâu). Ngày giờ sinh nhập theo dương lịch tại nơi sinh —
         lá số tự quy đổi về giờ Việt Nam (GMT+7), kể cả giờ mùa hè (DST) theo từng năm.
       </Text>
     </View>
+  );
+}
+
+function PalaceSheet({
+  palace,
+  chart,
+  onClose,
+  s,
+  theme,
+}: {
+  palace: TuViChart['palaces'][number] | null;
+  chart: TuViChart;
+  onClose: () => void;
+  s: any;
+  theme: Theme;
+}) {
+  if (!palace) return null;
+  const cols = columns(palace.stars);
+  const majors = palace.stars.filter((st) => st.kind === 'chinh');
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={s.modalBackdrop} onPress={onClose}>
+        <Pressable style={s.modalSheet} onPress={() => {}}>
+          <View style={s.sheetHead}>
+            <Text style={s.sheetCung}>
+              {palace.cung}
+              {palace.than ? ' · Thân' : ''}
+            </Text>
+            {chart.tuan.includes(palace.chiIndex) && <Text style={s.sheetTag}>TUẦN</Text>}
+            {chart.triet.includes(palace.chiIndex) && <Text style={s.sheetTag}>TRIỆT</Text>}
+          </View>
+          <Text style={s.sheetSub}>
+            {palace.canChi} · {palace.trangSinh} · Đại vận {palace.daiVan}
+          </Text>
+          <ScrollView style={{ maxHeight: 460 }}>
+            {majors.map((st) => (
+              <Text key={st.name} style={[s.sheetMajor, { color: starColor(st, theme) }]}>
+                {st.name}
+              </Text>
+            ))}
+            <View style={s.sheetCols}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.sheetColTitle}>Cát tinh</Text>
+                {cols.cat.map((it) => (
+                  <Text key={it.name} style={[s.sheetStar, { color: starColor(it, theme) }]}>
+                    {it.name}
+                  </Text>
+                ))}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.sheetColTitle}>Hung tinh</Text>
+                {cols.hung.map((it) => (
+                  <Text key={it.name} style={[s.sheetStar, { color: starColor(it, theme) }]}>
+                    {it.name}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -741,4 +815,50 @@ const styles = (t: Theme, isWide: boolean) =>
       textAlign: 'center',
       paddingVertical: t.space.md,
     } as object,
+    sheetHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingTop: t.space.md,
+    },
+    sheetCung: {
+      ...t.type.headline,
+      color: t.color.text.accent,
+      textTransform: 'uppercase',
+    } as object,
+    sheetTag: {
+      fontSize: 11,
+      ...t.face.bold,
+      color: t.color.state.bad,
+      borderWidth: 1,
+      borderColor: t.color.state.bad,
+      borderRadius: 4,
+      paddingHorizontal: 5,
+      overflow: 'hidden',
+    } as object,
+    sheetSub: {
+      ...t.type.caption,
+      color: t.color.text.secondary,
+      textAlign: 'center',
+      paddingBottom: t.space.sm,
+    } as object,
+    sheetMajor: {
+      ...t.type.headline,
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      marginVertical: 1,
+    } as object,
+    sheetCols: {
+      flexDirection: 'row',
+      gap: t.space.lg,
+      paddingHorizontal: t.space.lg,
+      paddingVertical: t.space.md,
+    },
+    sheetColTitle: {
+      ...t.type.micro,
+      color: t.color.text.tertiary,
+      marginBottom: 4,
+    } as object,
+    sheetStar: { ...t.type.body, ...t.face.semibold, marginVertical: 1 } as object,
   });
