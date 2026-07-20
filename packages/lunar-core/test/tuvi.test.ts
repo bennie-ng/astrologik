@@ -227,5 +227,9 @@ describe('laSoTuVi', () => {
     expect(find('Tả Phù')).toMatchObject({ element: 'Thổ', nature: 'cat' });
     expect(find('Thiên Riêu')).toMatchObject({ element: 'Thủy', nature: 'hung' });
     expect(find('Thiên Không')).toMatchObject({ element: 'Hỏa', nature: 'hung' });
+    expect(find('Hữu Bật')).toMatchObject({ element: 'Thủy', nature: 'cat' });
+    expect(find('Thiên Phúc')).toMatchObject({ element: 'Thổ', nature: 'cat' });
+    expect(find('Lực Sĩ')).toMatchObject({ element: 'Hỏa', nature: 'cat' });
+    expect(find('Thiên Đức')).toMatchObject({ element: 'Hỏa', nature: 'cat' });
   });
 });
