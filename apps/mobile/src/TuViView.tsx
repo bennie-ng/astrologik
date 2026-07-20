@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CHI, laSoTuVi, yearCanChi, type Gender, type TuViChart, type TuViStar } from 'lunar-core';
+import { CHI, laSoTuVi, type Gender, type TuViChart, type TuViStar } from 'lunar-core';
 import { useTheme } from './design';
 import type { Theme } from './design';
 
@@ -22,7 +22,41 @@ const ELEMENT_KEY: Record<string, keyof Theme['color']['element']> = {
   Thổ: 'tho',
 };
 
-const starColor = (st: TuViStar, theme: Theme) => theme.color.element[ELEMENT_KEY[st.element]];
+const starColor = (st: { element: string }, theme: Theme) =>
+  theme.color.element[ELEMENT_KEY[st.element]];
+
+/** Standalone tứ hóa entries shown in the star columns (like the reference). */
+const HOA_ELEMENT: Record<string, string> = {
+  'Hóa Lộc': 'Mộc',
+  'Hóa Quyền': 'Thủy',
+  'Hóa Khoa': 'Thủy',
+  'Hóa Kỵ': 'Thủy',
+};
+
+interface ColItem {
+  name: string;
+  element: string;
+  nature: 'cat' | 'hung';
+}
+
+/** Cát/hung columns: phụ tinh, then tứ hóa entries, then lưu niên stars. */
+function columns(stars: TuViStar[]): { cat: ColItem[]; hung: ColItem[] } {
+  const items: ColItem[] = [
+    ...stars.filter((st) => st.kind === 'phu'),
+    ...stars
+      .filter((st) => st.hoa)
+      .map((st) => ({
+        name: st.hoa!,
+        element: HOA_ELEMENT[st.hoa!],
+        nature: (st.hoa === 'Hóa Kỵ' ? 'hung' : 'cat') as ColItem['nature'],
+      })),
+    ...stars.filter((st) => st.kind === 'luu'),
+  ];
+  return {
+    cat: items.filter((it) => it.nature === 'cat'),
+    hung: items.filter((it) => it.nature === 'hung'),
+  };
+}
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -136,6 +170,7 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
   const [hour, setHour] = useState(0);
   const [tzIndex, setTzIndex] = useState(0);
   const [gender, setGender] = useState<Gender>('nam');
+  const [namXem, setNamXem] = useState(String(new Date().getFullYear()));
 
   const result = useMemo(() => {
     const d = parseInt(day, 10);
@@ -146,13 +181,20 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
     }
     const maxDay = new Date(y, m, 0).getDate();
     if (d > maxDay) return { error: `Tháng ${m}/${y} chỉ có ${maxDay} ngày.` } as const;
+    const nx = parseInt(namXem, 10);
+    if (!nx || nx < 1900 || nx > 2100) {
+      return { error: 'Nhập năm xem hợp lệ (1900–2100).' } as const;
+    }
     const vn = toVietnamTime(d, m, y, hour, TIMEZONES[tzIndex]);
     const converted =
       tzIndex !== 0
         ? `Nơi sinh ${fmtOffset(vn.offsetUsed)} → giờ Việt Nam: ${vn.day}/${vn.month}/${vn.year} · Giờ ${CHI[vn.hourChi]}`
         : null;
-    return { chart: laSoTuVi(vn.day, vn.month, vn.year, vn.hourChi, gender), converted } as const;
-  }, [day, month, year, hour, tzIndex, gender]);
+    return {
+      chart: laSoTuVi(vn.day, vn.month, vn.year, vn.hourChi, gender, nx),
+      converted,
+    } as const;
+  }, [day, month, year, hour, tzIndex, gender, namXem]);
 
   return (
     <ScrollView
@@ -202,18 +244,33 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
           theme={theme}
         />
 
-        <View style={s.genderRow}>
-          {(['nam', 'nu'] as const).map((g) => (
-            <Pressable
-              key={g}
-              onPress={() => setGender(g)}
-              style={[s.segment, gender === g && s.segmentActive]}
-            >
-              <Text style={[s.segmentText, gender === g && s.segmentTextActive]}>
-                {g === 'nam' ? 'Nam' : 'Nữ'}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={s.bottomRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.fieldLabel}>Năm xem (lưu niên)</Text>
+            <TextInput
+              style={s.input}
+              value={namXem}
+              onChangeText={(t) => setNamXem(t.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              maxLength={4}
+            />
+          </View>
+          <View style={{ flex: 1.4 }}>
+            <Text style={s.fieldLabel}>Giới tính</Text>
+            <View style={s.genderRow}>
+              {(['nam', 'nu'] as const).map((g) => (
+                <Pressable
+                  key={g}
+                  onPress={() => setGender(g)}
+                  style={[s.segment, gender === g && s.segmentActive]}
+                >
+                  <Text style={[s.segmentText, gender === g && s.segmentTextActive]}>
+                    {g === 'nam' ? 'Nam' : 'Nữ'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         </View>
         {'converted' in result && result.converted && (
           <Text style={s.convertedNote}>{result.converted}</Text>
@@ -305,10 +362,6 @@ function CenterRow({ label, value, s }: { label: string; value: string; s: any }
 }
 
 function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: any; theme: Theme }) {
-  const now = new Date();
-  const namXem = now.getFullYear();
-  const tuoi = namXem - chart.lunar.year + 1;
-  const namXemCC = yearCanChi(namXem).name;
   return (
     <View style={s.boardWrap}>
       <View style={s.board}>
@@ -327,16 +380,14 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
                 <Text style={s.palaceCanChi} numberOfLines={1}>{p.canChi}</Text>
                 <Text style={s.palaceDaiVan}>{p.daiVan}</Text>
               </View>
-              <Text style={s.palaceCung} numberOfLines={1}>
-                {p.cung}
-                {p.than ? ' · Thân' : ''}
-              </Text>
-              {(chart.tuan.includes(p.chiIndex) || chart.triet.includes(p.chiIndex)) && (
-                <View style={s.tagRow}>
-                  {chart.tuan.includes(p.chiIndex) && <Text style={s.tag}>TUẦN</Text>}
-                  {chart.triet.includes(p.chiIndex) && <Text style={s.tag}>TRIỆT</Text>}
-                </View>
-              )}
+              <View style={s.cungRow}>
+                <Text style={s.palaceCung} numberOfLines={1}>
+                  {p.cung}
+                  {p.than ? ' · Thân' : ''}
+                </Text>
+                {chart.tuan.includes(p.chiIndex) && <Text style={s.tag}>TUẦN</Text>}
+                {chart.triet.includes(p.chiIndex) && <Text style={s.tag}>TRIỆT</Text>}
+              </View>
               {p.stars
                 .filter((st) => st.kind === 'chinh')
                 .map((st) => (
@@ -346,39 +397,37 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
                     numberOfLines={1}
                   >
                     {st.name}
-                    {st.hoa ? <Text style={s.starHoa}> {st.hoa}</Text> : null}
                   </Text>
                 ))}
-              <View style={s.minorRow}>
-                <View style={s.minorCol}>
-                  {p.stars
-                    .filter((st) => st.kind === 'phu' && st.nature === 'cat')
-                    .map((st) => (
-                      <Text
-                        key={st.name}
-                        style={[s.starMinor, { color: starColor(st, theme) }]}
-                        numberOfLines={1}
-                      >
-                        {st.name}
-                        {st.hoa ? ` (${st.hoa})` : ''}
-                      </Text>
-                    ))}
-                </View>
-                <View style={s.minorCol}>
-                  {p.stars
-                    .filter((st) => st.kind === 'phu' && st.nature === 'hung')
-                    .map((st) => (
-                      <Text
-                        key={st.name}
-                        style={[s.starMinor, s.starMinorHung, { color: starColor(st, theme) }]}
-                        numberOfLines={1}
-                      >
-                        {st.name}
-                        {st.hoa ? ` (${st.hoa})` : ''}
-                      </Text>
-                    ))}
-                </View>
-              </View>
+              {(() => {
+                const cols = columns(p.stars);
+                return (
+                  <View style={s.minorRow}>
+                    <View style={s.minorCol}>
+                      {cols.cat.map((it) => (
+                        <Text
+                          key={it.name}
+                          style={[s.starMinor, { color: starColor(it, theme) }]}
+                          numberOfLines={1}
+                        >
+                          {it.name}
+                        </Text>
+                      ))}
+                    </View>
+                    <View style={s.minorCol}>
+                      {cols.hung.map((it) => (
+                        <Text
+                          key={it.name}
+                          style={[s.starMinor, s.starMinorHung, { color: starColor(it, theme) }]}
+                          numberOfLines={1}
+                        >
+                          {it.name}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+                );
+              })()}
               <Text style={s.palaceTrangSinh}>{p.trangSinh}</Text>
             </View>
           );
@@ -405,7 +454,13 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
             value={`${chart.hourCanChi} (${chiRange(chart.input.hourChi)})`}
             s={s}
           />
-          <CenterRow label="Năm xem" value={`${namXemCC} (${namXem}) · ${tuoi} tuổi`} s={s} />
+          {chart.namXem && (
+            <CenterRow
+              label="Năm xem"
+              value={`${chart.namXem.canChi} (${chart.namXem.year}) · ${chart.namXem.tuoi} tuổi`}
+              s={s}
+            />
+          )}
           <View style={s.centerDivider} />
           <CenterRow label="Âm dương" value={chart.amDuong} s={s} />
           <CenterRow label="Bản mệnh" value={chart.banMenh} s={s} />
@@ -596,7 +651,14 @@ const styles = (t: Theme, isWide: boolean) =>
       textAlign: 'center',
       marginBottom: 1,
     } as object,
-    tagRow: { flexDirection: 'row', gap: 3, marginBottom: 1, alignSelf: 'center' },
+    cungRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      marginBottom: 1,
+    },
+    bottomRow: { flexDirection: 'row', gap: t.space.sm, alignItems: 'flex-end' },
     tag: {
       fontSize: isWide ? 9 : 6.5,
       ...t.face.bold,

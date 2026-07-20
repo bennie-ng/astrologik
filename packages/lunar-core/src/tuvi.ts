@@ -16,7 +16,7 @@ export type Gender = 'nam' | 'nu';
 
 export interface TuViStar {
   name: string;
-  kind: 'chinh' | 'phu';
+  kind: 'chinh' | 'phu' | 'luu';
   /** Ngũ hành of the star */
   element: NapAm['element'];
   /** Cát tinh (good) or hung tinh (bad) */
@@ -174,8 +174,21 @@ export interface TuViChart {
   tuan: [number, number];
   /** Triệt Lộ Không Vong — the two palace chi it covers */
   triet: [number, number];
+  /** The viewing year for lưu niên stars, if requested */
+  namXem?: { year: number; canChi: string; tuoi: number };
   palaces: TuViPalace[]; // indexed by chi 0..11
 }
+
+/** Lưu Văn Khúc by year-can index (mirror of the Văn Xương table). */
+const LUU_VAN_KHUC = [9, 8, 6, 5, 6, 5, 3, 2, 0, 11];
+
+/** Element/nature of the standalone tứ hóa entries. */
+const HOA_INFO: Record<string, [NapAm['element'], 'cat' | 'hung']> = {
+  'Hóa Lộc': ['Mộc', 'cat'],
+  'Hóa Quyền': ['Thủy', 'cat'],
+  'Hóa Khoa': ['Thủy', 'cat'],
+  'Hóa Kỵ': ['Thủy', 'hung'],
+};
 
 /** Chủ mệnh star by year-chi index. */
 const MENH_CHU = [
@@ -389,13 +402,14 @@ export function tuViPosition(cucSo: number, lunarDay: number): number {
   return mod12(r % 2 === 0 ? 2 + (q - 1) + r : 2 + (q - 1) - r);
 }
 
-/** Compute the full lá số tử vi. */
+/** Compute the full lá số tử vi. Pass `namXem` to place lưu niên stars. */
 export function laSoTuVi(
   day: number,
   month: number,
   year: number,
   hourChi: number,
   gender: Gender,
+  namXem?: number,
 ): TuViChart {
   const lunar = solarToLunar(day, month, year);
   const yCC = yearCanChi(lunar.year);
@@ -545,6 +559,50 @@ export function laSoTuVi(
   const tuan: [number, number] = [mod12(decadeStartChi + 10), mod12(decadeStartChi + 11)];
   const triet = TRIET[yCC.canIndex % 5] as [number, number];
 
+  // Lưu niên: sao theo can/chi của năm xem (đặt sau các sao gốc).
+  let namXemInfo: TuViChart['namXem'];
+  if (namXem !== undefined) {
+    const yx = yearCanChi(namXem);
+    namXemInfo = { year: namXem, canChi: yx.name, tuoi: namXem - lunar.year + 1 };
+    const putLuu = (chi: number, base: string) => {
+      const info = STAR_INFO[base] ?? HOA_INFO[base];
+      const c = mod12(chi);
+      if (!stars.has(c)) stars.set(c, []);
+      stars.get(c)!.push({ name: `L.${base}`, kind: 'luu', element: info[0], nature: info[1] });
+    };
+    const lc = yx.canIndex;
+    const lchi = yx.chiIndex;
+    const llt = LOC_TON[lc];
+    putLuu(llt, 'Lộc Tồn');
+    putLuu(llt + 1, 'Kình Dương');
+    putLuu(llt - 1, 'Đà La');
+    putLuu(LN_VAN_TINH[lc], 'Văn Xương');
+    putLuu(LUU_VAN_KHUC[lc], 'Văn Khúc');
+    const [lkhoi, lviet] = KHOI_VIET[lc];
+    putLuu(lkhoi, 'Thiên Khôi');
+    putLuu(lviet, 'Thiên Việt');
+    putLuu(lchi, 'Thái Tuế');
+    putLuu(lchi + 2, 'Tang Môn');
+    putLuu(lchi + 8, 'Bạch Hổ');
+    putLuu(6 - lchi, 'Thiên Khốc');
+    putLuu(6 + lchi, 'Thiên Hư');
+    putLuu(3 - lchi, 'Hồng Loan');
+    const lgrp = chiGroup(lchi);
+    putLuu(lgrp.ma, 'Thiên Mã');
+    putLuu(lgrp.dao, 'Đào Hoa');
+    putLuu(lgrp.kiepSat, 'Kiếp Sát');
+    // Lưu tứ hóa: đặt tại cung của sao được hóa (theo vị trí an gốc).
+    const HOA_LABELS_LUU = ['Hóa Lộc', 'Hóa Quyền', 'Hóa Khoa', 'Hóa Kỵ'] as const;
+    TU_HOA[lc].forEach((starName, i) => {
+      for (const [chi, list] of stars.entries()) {
+        if (list.some((x) => x.kind !== 'luu' && x.name === starName)) {
+          putLuu(chi, HOA_LABELS_LUU[i]);
+          return;
+        }
+      }
+    });
+  }
+
   // Tứ hóa: attach to the star wherever it sits.
   const [hLoc, hQuyen, hKhoa, hKy] = TU_HOA[yCC.canIndex];
   const HOA_LABELS = ['Hóa Lộc', 'Hóa Quyền', 'Hóa Khoa', 'Hóa Kỵ'] as const;
@@ -564,8 +622,11 @@ export function laSoTuVi(
     const offset = mod12(chi - menh);
     const tsSteps = thuan ? mod12(chi - cuc.sinh) : mod12(cuc.sinh - chi);
     const dvSteps = thuan ? offset : mod12(menh - chi);
+    const KIND_ORDER = { chinh: 0, phu: 1, luu: 2 } as const;
     const list = (stars.get(chi) ?? []).sort((a, b) =>
-      a.kind === b.kind ? a.name.localeCompare(b.name, 'vi') : a.kind === 'chinh' ? -1 : 1,
+      a.kind === b.kind
+        ? a.name.localeCompare(b.name, 'vi')
+        : KIND_ORDER[a.kind] - KIND_ORDER[b.kind],
     );
     palaces.push({
       chiIndex: chi,
@@ -599,6 +660,7 @@ export function laSoTuVi(
     thanIndex: than,
     tuan,
     triet,
+    namXem: namXemInfo,
     palaces,
   };
 }

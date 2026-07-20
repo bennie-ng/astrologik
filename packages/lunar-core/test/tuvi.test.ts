@@ -171,6 +171,47 @@ describe('laSoTuVi', () => {
     expect(c.palaces[(c.menhIndex + 11) % 12].daiVan).toBe(15);
   });
 
+  it('lưu niên stars for năm xem 2026 (Bính Ngọ) match the reference chart', () => {
+    const c = laSoTuVi(12, 4, 1989, 10, 'nam', 2026);
+    expect(c.namXem).toMatchObject({ year: 2026, canChi: 'Bính Ngọ', tuoi: 38 });
+    const at = (name: string) =>
+      c.palaces.findIndex((p) => p.stars.some((s) => s.kind === 'luu' && s.name === name));
+    expect(at('L.Thái Tuế')).toBe(6); // Ngọ
+    expect(at('L.Lộc Tồn')).toBe(5); // Bính → Tỵ
+    expect(at('L.Kình Dương')).toBe(6);
+    expect(at('L.Văn Xương')).toBe(8); // Bính → Thân
+    expect(at('L.Văn Khúc')).toBe(6); // Bính → Ngọ
+    expect(at('L.Thiên Khôi')).toBe(11); // Bính → Hợi
+    expect(at('L.Thiên Việt')).toBe(9); // Bính → Dậu
+    expect(at('L.Tang Môn')).toBe(8);
+    expect(at('L.Bạch Hổ')).toBe(2);
+    expect(at('L.Thiên Khốc')).toBe(0);
+    expect(at('L.Thiên Hư')).toBe(0);
+    expect(at('L.Hồng Loan')).toBe(9);
+    expect(at('L.Đào Hoa')).toBe(3);
+    expect(at('L.Thiên Mã')).toBe(8);
+    expect(at('L.Kiếp Sát')).toBe(11);
+    // Lưu tứ hóa của Bính đặt tại cung của sao được hóa
+    expect(at('L.Hóa Lộc')).toBe(7); // Thiên Đồng tại Mùi
+    expect(at('L.Hóa Quyền')).toBe(11); // Thiên Cơ tại Hợi
+    expect(at('L.Hóa Khoa')).toBe(0); // Văn Xương tại Tý
+    expect(at('L.Hóa Kỵ')).toBe(4); // Liêm Trinh tại Thìn
+    const luuCount = c.palaces.reduce(
+      (n, p) => n + p.stars.filter((s) => s.kind === 'luu').length,
+      0,
+    );
+    expect(luuCount).toBe(20);
+  });
+
+  it('omitting năm xem places no lưu stars', () => {
+    const total = chart.palaces.reduce(
+      (n, p) => n + p.stars.filter((s) => s.kind === 'luu').length,
+      0,
+    );
+    expect(total).toBe(0);
+    expect(chart.namXem).toBeUndefined();
+  });
+
   it('every star carries ngũ hành and cát/hung nature', () => {
     for (const p of chart.palaces) {
       for (const st of p.stars) {
