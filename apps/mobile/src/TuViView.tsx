@@ -836,7 +836,7 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
                 const cols = columns(p.stars, p.chiIndex);
                 const majors = p.stars.filter((st) => st.kind === 'chinh').length;
                 // Phone cells are fixed-height; cap rows so lines never overlap.
-                const cap = isWide ? 99 : majors >= 2 ? 4 : majors === 1 ? 5 : 6;
+                const cap = isWide ? 99 : majors >= 2 ? 6 : majors === 1 ? 7 : 8;
                 return (
                   <View style={s.minorRow}>
                     <MinorColumn items={cols.cat} cap={cap} showDac={isWide} s={s} theme={theme} />
@@ -1136,9 +1136,10 @@ const styles = (t: Theme, isWide: boolean) =>
     boardWrap: { maxWidth: isWide ? 1120 : 560, width: '100%', alignSelf: 'center' },
     board: {
       width: '100%',
-      // Phones get taller cells so star text stays at a size Safari
-      // won't inflate; desktop keeps the classic square.
-      aspectRatio: isWide ? 1 : 3 / 4,
+      // Phones get much taller cells so star text has room to breathe
+      // (and stays at a size Safari won't inflate); desktop keeps the
+      // classic square.
+      aspectRatio: isWide ? 1 : 0.58,
       backgroundColor: t.color.bg.surface,
       borderRadius: t.radius.card,
       borderWidth: 1,
@@ -1152,7 +1153,7 @@ const styles = (t: Theme, isWide: boolean) =>
       height: '25%',
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.color.border.subtle,
-      padding: isWide ? 6 : 3,
+      padding: isWide ? 6 : 5,
       overflow: 'hidden',
     },
     palaceMenh: { backgroundColor: t.color.bg.accentSoft },
@@ -1195,7 +1196,7 @@ const styles = (t: Theme, isWide: boolean) =>
     } as object,
     starMajor: {
       fontSize: isWide ? 12 : 8.5,
-      lineHeight: isWide ? 16 : 12,
+      lineHeight: isWide ? 16 : 13,
       ...t.face.bold,
       textAlign: 'center',
       textTransform: 'uppercase',
@@ -1205,8 +1206,8 @@ const styles = (t: Theme, isWide: boolean) =>
     minorRow: { flexDirection: 'row', flex: 1, gap: 2, marginTop: 1, overflow: 'hidden' },
     minorCol: { flex: 1, minWidth: 0 },
     starMinor: {
-      fontSize: isWide ? 9.5 : 8,
-      lineHeight: isWide ? 13 : 11,
+      fontSize: isWide ? 9.5 : 8.5,
+      lineHeight: isWide ? 13 : 12.5,
       flexShrink: 0,
       ...t.face.medium,
     } as object,
