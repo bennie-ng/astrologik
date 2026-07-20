@@ -17,9 +17,120 @@ export type Gender = 'nam' | 'nu';
 export interface TuViStar {
   name: string;
   kind: 'chinh' | 'phu';
+  /** Ngũ hành of the star */
+  element: NapAm['element'];
+  /** Cát tinh (good) or hung tinh (bad) */
+  nature: 'cat' | 'hung';
   /** Tứ hóa attached to this star, if any */
   hoa?: 'Hóa Lộc' | 'Hóa Quyền' | 'Hóa Khoa' | 'Hóa Kỵ';
 }
+
+/**
+ * Ngũ hành and cát/hung nature per star, following the classification
+ * used by the reference lasotuvi implementation.
+ */
+const STAR_INFO: Record<string, [NapAm['element'], 'cat' | 'hung']> = {
+  // 14 chính tinh
+  'Tử Vi': ['Thổ', 'cat'],
+  'Liêm Trinh': ['Hỏa', 'cat'],
+  'Thiên Đồng': ['Thủy', 'cat'],
+  'Vũ Khúc': ['Kim', 'cat'],
+  'Thái Dương': ['Hỏa', 'cat'],
+  'Thiên Cơ': ['Mộc', 'cat'],
+  'Thiên Phủ': ['Thổ', 'cat'],
+  'Thái Âm': ['Thủy', 'cat'],
+  'Tham Lang': ['Thủy', 'cat'],
+  'Cự Môn': ['Thủy', 'cat'],
+  'Thiên Tướng': ['Thủy', 'cat'],
+  'Thiên Lương': ['Mộc', 'cat'],
+  'Thất Sát': ['Kim', 'cat'],
+  'Phá Quân': ['Thủy', 'cat'],
+  // Vòng Thái Tuế
+  'Thái Tuế': ['Hỏa', 'hung'],
+  'Thiếu Dương': ['Hỏa', 'cat'],
+  'Tang Môn': ['Mộc', 'hung'],
+  'Thiếu Âm': ['Thủy', 'cat'],
+  'Quan Phù': ['Hỏa', 'hung'],
+  'Tử Phù': ['Kim', 'hung'],
+  'Tuế Phá': ['Hỏa', 'hung'],
+  'Long Đức': ['Thủy', 'cat'],
+  'Bạch Hổ': ['Kim', 'hung'],
+  'Phúc Đức': ['Thổ', 'cat'],
+  'Điếu Khách': ['Hỏa', 'hung'],
+  'Trực Phù': ['Kim', 'hung'],
+  // Lộc Tồn và vòng Bác Sĩ
+  'Lộc Tồn': ['Thổ', 'cat'],
+  'Bác Sĩ': ['Thủy', 'cat'],
+  'Lực Sĩ': ['Hỏa', 'cat'],
+  'Thanh Long': ['Thủy', 'cat'],
+  'Tiểu Hao': ['Hỏa', 'hung'],
+  'Tướng Quân': ['Mộc', 'cat'],
+  'Tấu Thư': ['Kim', 'cat'],
+  'Phi Liêm': ['Hỏa', 'cat'],
+  'Hỷ Thần': ['Hỏa', 'cat'],
+  'Bệnh Phù': ['Thổ', 'hung'],
+  'Đại Hao': ['Hỏa', 'hung'],
+  'Phục Binh': ['Hỏa', 'hung'],
+  'Quan Phủ': ['Hỏa', 'hung'],
+  // Lục sát và sát tinh
+  'Kình Dương': ['Kim', 'hung'],
+  'Đà La': ['Kim', 'hung'],
+  'Địa Không': ['Hỏa', 'hung'],
+  'Địa Kiếp': ['Hỏa', 'hung'],
+  'Hỏa Tinh': ['Hỏa', 'hung'],
+  'Linh Tinh': ['Hỏa', 'hung'],
+  'Kiếp Sát': ['Hỏa', 'hung'],
+  'Thiên Không': ['Thủy', 'hung'],
+  // Văn tinh, quý tinh
+  'Văn Xương': ['Kim', 'cat'],
+  'Văn Khúc': ['Thủy', 'cat'],
+  'Thiên Khôi': ['Hỏa', 'cat'],
+  'Thiên Việt': ['Hỏa', 'cat'],
+  'Tả Phù': ['Thổ', 'cat'],
+  'Hữu Bật': ['Thổ', 'cat'],
+  'Long Trì': ['Thủy', 'cat'],
+  'Phượng Các': ['Thổ', 'cat'],
+  'Tam Thai': ['Mộc', 'cat'],
+  'Bát Tọa': ['Thủy', 'cat'],
+  'Ân Quang': ['Mộc', 'cat'],
+  'Thiên Quý': ['Thổ', 'cat'],
+  'Quốc Ấn': ['Thổ', 'cat'],
+  'Đường Phù': ['Mộc', 'cat'],
+  'Thai Phụ': ['Kim', 'cat'],
+  'Phong Cáo': ['Thổ', 'cat'],
+  'LN Văn Tinh': ['Hỏa', 'cat'],
+  // Phúc thiện, đào hoa
+  'Thiên Đức': ['Hỏa', 'cat'],
+  'Nguyệt Đức': ['Hỏa', 'cat'],
+  'Thiên Y': ['Thủy', 'cat'],
+  'Thiên Giải': ['Hỏa', 'cat'],
+  'Địa Giải': ['Thổ', 'cat'],
+  'Giải Thần': ['Mộc', 'cat'],
+  'Đào Hoa': ['Mộc', 'cat'],
+  'Hồng Loan': ['Thủy', 'cat'],
+  'Thiên Hỷ': ['Thủy', 'cat'],
+  'Thiên Quan': ['Hỏa', 'cat'],
+  'Thiên Phúc': ['Hỏa', 'cat'],
+  'Thiên Trù': ['Thổ', 'cat'],
+  'Thiên Mã': ['Hỏa', 'cat'],
+  'Thiên Tài': ['Thổ', 'cat'],
+  'Thiên Thọ': ['Thổ', 'cat'],
+  'Hoa Cái': ['Kim', 'cat'],
+  'Đẩu Quân': ['Hỏa', 'cat'],
+  // Hung, bại, ám tinh
+  'Thiên Khốc': ['Thủy', 'hung'],
+  'Thiên Hư': ['Thủy', 'hung'],
+  'Thiên Hình': ['Hỏa', 'hung'],
+  'Thiên Riêu': ['Thủy', 'hung'],
+  'Cô Thần': ['Thổ', 'hung'],
+  'Quả Tú': ['Thổ', 'hung'],
+  'Phá Toái': ['Hỏa', 'hung'],
+  'Lưu Hà': ['Thủy', 'hung'],
+  'Thiên Thương': ['Thổ', 'hung'],
+  'Thiên Sứ': ['Thủy', 'hung'],
+  'Thiên La': ['Thổ', 'hung'],
+  'Địa Võng': ['Thổ', 'hung'],
+};
 
 export interface TuViPalace {
   chiIndex: number;
@@ -252,9 +363,11 @@ export function laSoTuVi(
   // Star placement.
   const stars = new Map<number, TuViStar[]>();
   const put = (chi: number, name: string, kind: TuViStar['kind']) => {
+    const info = STAR_INFO[name];
+    if (!info) throw new Error(`Missing STAR_INFO for ${name}`);
     const c = mod12(chi);
     if (!stars.has(c)) stars.set(c, []);
-    stars.get(c)!.push({ name, kind });
+    stars.get(c)!.push({ name, kind, element: info[0], nature: info[1] });
   };
 
   const tv = tuViPosition(cuc.so, lunar.day);

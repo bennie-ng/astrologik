@@ -151,4 +151,20 @@ describe('laSoTuVi', () => {
     expect(chart.palaces[10].stars.map((s) => s.name)).toContain('Địa Võng');
     expect(chart.palaces[5].stars.map((s) => s.name)).toContain('LN Văn Tinh');
   });
+
+  it('every star carries ngũ hành and cát/hung nature', () => {
+    for (const p of chart.palaces) {
+      for (const st of p.stars) {
+        expect(['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ']).toContain(st.element);
+        expect(['cat', 'hung']).toContain(st.nature);
+      }
+    }
+    const find = (name: string) =>
+      chart.palaces.flatMap((p) => p.stars).find((s) => s.name === name)!;
+    expect(find('Vũ Khúc')).toMatchObject({ element: 'Kim', nature: 'cat' });
+    expect(find('Kình Dương')).toMatchObject({ element: 'Kim', nature: 'hung' });
+    expect(find('Địa Kiếp')).toMatchObject({ element: 'Hỏa', nature: 'hung' });
+    expect(find('Tả Phù')).toMatchObject({ element: 'Thổ', nature: 'cat' });
+    expect(find('Thiên Riêu')).toMatchObject({ element: 'Thủy', nature: 'hung' });
+  });
 });

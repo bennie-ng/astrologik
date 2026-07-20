@@ -10,9 +10,19 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CHI, laSoTuVi, type Gender, type TuViChart } from 'lunar-core';
+import { CHI, laSoTuVi, type Gender, type TuViChart, type TuViStar } from 'lunar-core';
 import { useTheme } from './design';
 import type { Theme } from './design';
+
+const ELEMENT_KEY: Record<string, keyof Theme['color']['element']> = {
+  Kim: 'kim',
+  Mộc: 'moc',
+  Thủy: 'thuy',
+  Hỏa: 'hoa',
+  Thổ: 'tho',
+};
+
+const starColor = (st: TuViStar, theme: Theme) => theme.color.element[ELEMENT_KEY[st.element]];
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -21,31 +31,73 @@ const chiOfHour = (h: number) => Math.floor(((h + 1) % 24) / 2);
 
 const hourLabel = (h: number) => `${pad(h)}:00 – ${pad(h)}:59 · Giờ ${CHI[chiOfHour(h)]}`;
 
-/** Birth-place time zones (offset in minutes from GMT). Việt Nam first. */
-const TIMEZONES: ReadonlyArray<{ label: string; off: number }> = [
-  { label: 'Việt Nam · GMT+7', off: 420 },
-  { label: 'GMT+8 · Singapore, Đài Loan, Trung Quốc', off: 480 },
-  { label: 'GMT+9 · Nhật Bản, Hàn Quốc', off: 540 },
-  { label: 'GMT+10 · Úc (Sydney)', off: 600 },
-  { label: 'GMT+12 · New Zealand', off: 720 },
-  { label: 'GMT+0 · Anh', off: 0 },
-  { label: 'GMT+1 · Đức, Pháp, Séc, Ba Lan', off: 60 },
-  { label: 'GMT+2 · Đông Âu, Ukraina', off: 120 },
-  { label: 'GMT+3 · Nga (Moscow)', off: 180 },
-  { label: 'GMT+5:30 · Ấn Độ', off: 330 },
-  { label: 'GMT-5 · Mỹ (bờ Đông), Canada (Toronto)', off: -300 },
-  { label: 'GMT-6 · Mỹ (miền Trung)', off: -360 },
-  { label: 'GMT-7 · Mỹ (miền núi)', off: -420 },
-  { label: 'GMT-8 · Mỹ (bờ Tây), Canada (Vancouver)', off: -480 },
-  { label: 'GMT-10 · Hawaii', off: -600 },
+/**
+ * Birth-place time zones as IANA identifiers — daylight saving time is
+ * resolved automatically per birth year via Intl. `off` is only the
+ * standard-offset fallback for runtimes without time-zone data.
+ */
+const TIMEZONES: ReadonlyArray<{ label: string; tz: string; off: number }> = [
+  { label: 'Việt Nam (GMT+7)', tz: 'Asia/Ho_Chi_Minh', off: 420 },
+  { label: 'Singapore, Malaysia', tz: 'Asia/Singapore', off: 480 },
+  { label: 'Đài Loan', tz: 'Asia/Taipei', off: 480 },
+  { label: 'Trung Quốc', tz: 'Asia/Shanghai', off: 480 },
+  { label: 'Nhật Bản', tz: 'Asia/Tokyo', off: 540 },
+  { label: 'Hàn Quốc', tz: 'Asia/Seoul', off: 540 },
+  { label: 'Úc — Sydney, Melbourne', tz: 'Australia/Sydney', off: 600 },
+  { label: 'Úc — Perth', tz: 'Australia/Perth', off: 480 },
+  { label: 'New Zealand', tz: 'Pacific/Auckland', off: 720 },
+  { label: 'Anh', tz: 'Europe/London', off: 0 },
+  { label: 'Đức, Pháp, Séc, Ba Lan', tz: 'Europe/Berlin', off: 60 },
+  { label: 'Nga — Moscow', tz: 'Europe/Moscow', off: 180 },
+  { label: 'Ấn Độ', tz: 'Asia/Kolkata', off: 330 },
+  { label: 'Mỹ — bờ Đông, Canada (Toronto)', tz: 'America/New_York', off: -300 },
+  { label: 'Mỹ — miền Trung (Chicago, Houston)', tz: 'America/Chicago', off: -360 },
+  { label: 'Mỹ — miền núi (Denver)', tz: 'America/Denver', off: -420 },
+  { label: 'Mỹ — bờ Tây, Canada (Vancouver)', tz: 'America/Los_Angeles', off: -480 },
+  { label: 'Hawaii', tz: 'Pacific/Honolulu', off: -600 },
 ];
 
+/** Wall-clock time of a UTC instant in an IANA zone, as a UTC-encoded ms value. */
+function wallInZone(utcMs: number, tz: string): number {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(new Date(utcMs))
+      .map((p) => [p.type, p.value]),
+  );
+  return Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute);
+}
+
 /**
- * Convert a local birth datetime (mid-hour) to Vietnam time (GMT+7),
- * where the lunar calendar and giờ chi are defined.
+ * Convert a local birth datetime (mid-hour) at the birth place to
+ * Vietnam time (GMT+7), where the lunar calendar and giờ chi are
+ * defined. DST at the birth place and date is resolved via Intl.
  */
-function toVietnamTime(d: number, m: number, y: number, hour: number, offMinutes: number) {
-  const utcMs = Date.UTC(y, m - 1, d, hour, 30) - offMinutes * 60000;
+function toVietnamTime(
+  d: number,
+  m: number,
+  y: number,
+  hour: number,
+  zone: { tz: string; off: number },
+) {
+  const localWall = Date.UTC(y, m - 1, d, hour, 30);
+  let utcMs = localWall - zone.off * 60000;
+  try {
+    // Iterate: adjust the UTC guess until its wall time in the zone matches.
+    for (let i = 0; i < 3; i++) {
+      utcMs += localWall - wallInZone(utcMs, zone.tz);
+    }
+  } catch {
+    utcMs = localWall - zone.off * 60000; // no tz data: fixed standard offset
+  }
+  const offsetUsed = Math.round((localWall - utcMs) / 60000);
   const vn = new Date(utcMs + 420 * 60000);
   const minutes = vn.getUTCHours() * 60 + vn.getUTCMinutes();
   return {
@@ -53,8 +105,15 @@ function toVietnamTime(d: number, m: number, y: number, hour: number, offMinutes
     month: vn.getUTCMonth() + 1,
     year: vn.getUTCFullYear(),
     hourChi: Math.floor(((minutes + 60) % 1440) / 120),
+    offsetUsed,
   };
 }
+
+const fmtOffset = (min: number) => {
+  const sign = min < 0 ? '-' : '+';
+  const a = Math.abs(min);
+  return `GMT${sign}${Math.floor(a / 60)}${a % 60 ? ':' + pad(a % 60) : ''}`;
+};
 
 /** Grid placement of the 12 chi palaces: [row, col] in a 4×4 board. */
 const GRID_POS: Record<number, [number, number]> = {
@@ -86,10 +145,10 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
     }
     const maxDay = new Date(y, m, 0).getDate();
     if (d > maxDay) return { error: `Tháng ${m}/${y} chỉ có ${maxDay} ngày.` } as const;
-    const vn = toVietnamTime(d, m, y, hour, TIMEZONES[tzIndex].off);
+    const vn = toVietnamTime(d, m, y, hour, TIMEZONES[tzIndex]);
     const converted =
-      TIMEZONES[tzIndex].off !== 420
-        ? `Quy đổi giờ Việt Nam: ${vn.day}/${vn.month}/${vn.year} · Giờ ${CHI[vn.hourChi]}`
+      tzIndex !== 0
+        ? `Nơi sinh ${fmtOffset(vn.offsetUsed)} → giờ Việt Nam: ${vn.day}/${vn.month}/${vn.year} · Giờ ${CHI[vn.hourChi]}`
         : null;
     return { chart: laSoTuVi(vn.day, vn.month, vn.year, vn.hourChi, gender), converted } as const;
   }, [day, month, year, hour, tzIndex, gender]);
@@ -254,17 +313,45 @@ function Board({ chart, s, theme }: { chart: TuViChart; s: any; theme: Theme }) 
               {p.stars
                 .filter((st) => st.kind === 'chinh')
                 .map((st) => (
-                  <Text key={st.name} style={s.starMajor} numberOfLines={1}>
+                  <Text
+                    key={st.name}
+                    style={[s.starMajor, { color: starColor(st, theme) }]}
+                    numberOfLines={1}
+                  >
                     {st.name}
                     {st.hoa ? <Text style={s.starHoa}> {st.hoa}</Text> : null}
                   </Text>
                 ))}
-              <Text style={s.starMinor} numberOfLines={8}>
-                {p.stars
-                  .filter((st) => st.kind === 'phu')
-                  .map((st) => st.name + (st.hoa ? ` (${st.hoa})` : ''))
-                  .join(' · ')}
-              </Text>
+              <View style={s.minorRow}>
+                <View style={s.minorCol}>
+                  {p.stars
+                    .filter((st) => st.kind === 'phu' && st.nature === 'cat')
+                    .map((st) => (
+                      <Text
+                        key={st.name}
+                        style={[s.starMinor, { color: starColor(st, theme) }]}
+                        numberOfLines={1}
+                      >
+                        {st.name}
+                        {st.hoa ? ` (${st.hoa})` : ''}
+                      </Text>
+                    ))}
+                </View>
+                <View style={s.minorCol}>
+                  {p.stars
+                    .filter((st) => st.kind === 'phu' && st.nature === 'hung')
+                    .map((st) => (
+                      <Text
+                        key={st.name}
+                        style={[s.starMinor, s.starMinorHung, { color: starColor(st, theme) }]}
+                        numberOfLines={1}
+                      >
+                        {st.name}
+                        {st.hoa ? ` (${st.hoa})` : ''}
+                      </Text>
+                    ))}
+                </View>
+              </View>
               <Text style={s.palaceTrangSinh}>{p.trangSinh}</Text>
             </View>
           );
@@ -286,9 +373,10 @@ function Board({ chart, s, theme }: { chart: TuViChart; s: any; theme: Theme }) 
         </View>
       </View>
       <Text style={s.note}>
-        Số ở góc phải mỗi cung là tuổi khởi đại vận (10 năm). Ngày giờ sinh nhập theo dương lịch,
-        theo đồng hồ tại nơi sinh — lá số tự quy đổi về giờ Việt Nam (GMT+7) để tính âm lịch và giờ
-        chi. Nếu nơi sinh áp dụng giờ mùa hè (DST) vào lúc sinh, chọn múi giờ thực tế khi đó.
+        Số ở góc phải mỗi cung là tuổi khởi đại vận (10 năm). Trong mỗi cung, phụ tinh xếp hai cột:
+        trái là cát tinh, phải là hung tinh; màu chữ theo ngũ hành của sao (Kim vàng đồng · Mộc xanh
+        lá · Thủy xanh dương · Hỏa đỏ · Thổ nâu). Ngày giờ sinh nhập theo dương lịch tại nơi sinh —
+        lá số tự quy đổi về giờ Việt Nam (GMT+7), kể cả giờ mùa hè (DST) theo từng năm.
       </Text>
     </View>
   );
@@ -477,14 +565,14 @@ const styles = (t: Theme, isWide: boolean) =>
     } as object,
     starMajor: { fontSize: isWide ? 12 : 8.5, ...t.face.semibold, color: t.color.text.primary } as object,
     starHoa: { color: t.color.text.lunar, ...t.face.semibold } as object,
+    minorRow: { flexDirection: 'row', flex: 1, gap: 2, marginTop: 1 },
+    minorCol: { flex: 1, minWidth: 0 },
     starMinor: {
       fontSize: isWide ? 9.5 : 6.5,
       lineHeight: isWide ? 13 : 9,
-      ...t.face.regular,
-      color: t.color.text.secondary,
-      marginTop: 1,
-      flex: 1,
+      ...t.face.medium,
     } as object,
+    starMinorHung: { textAlign: 'right' },
     palaceTrangSinh: {
       fontSize: isWide ? 10 : 7,
       ...t.face.medium,
