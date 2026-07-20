@@ -10,11 +10,51 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CHI, HOUR_RANGES, laSoTuVi, type Gender, type TuViChart } from 'lunar-core';
+import { CHI, laSoTuVi, type Gender, type TuViChart } from 'lunar-core';
 import { useTheme } from './design';
 import type { Theme } from './design';
 
-const hourLabel = (i: number) => `${CHI[i]} (${HOUR_RANGES[i].replace('-', ' – ')})`;
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** Giờ chi containing a clock hour (23:00 belongs to Tý). */
+const chiOfHour = (h: number) => Math.floor(((h + 1) % 24) / 2);
+
+const hourLabel = (h: number) => `${pad(h)}:00 – ${pad(h)}:59 · Giờ ${CHI[chiOfHour(h)]}`;
+
+/** Birth-place time zones (offset in minutes from GMT). Việt Nam first. */
+const TIMEZONES: ReadonlyArray<{ label: string; off: number }> = [
+  { label: 'Việt Nam · GMT+7', off: 420 },
+  { label: 'GMT+8 · Singapore, Đài Loan, Trung Quốc', off: 480 },
+  { label: 'GMT+9 · Nhật Bản, Hàn Quốc', off: 540 },
+  { label: 'GMT+10 · Úc (Sydney)', off: 600 },
+  { label: 'GMT+12 · New Zealand', off: 720 },
+  { label: 'GMT+0 · Anh', off: 0 },
+  { label: 'GMT+1 · Đức, Pháp, Séc, Ba Lan', off: 60 },
+  { label: 'GMT+2 · Đông Âu, Ukraina', off: 120 },
+  { label: 'GMT+3 · Nga (Moscow)', off: 180 },
+  { label: 'GMT+5:30 · Ấn Độ', off: 330 },
+  { label: 'GMT-5 · Mỹ (bờ Đông), Canada (Toronto)', off: -300 },
+  { label: 'GMT-6 · Mỹ (miền Trung)', off: -360 },
+  { label: 'GMT-7 · Mỹ (miền núi)', off: -420 },
+  { label: 'GMT-8 · Mỹ (bờ Tây), Canada (Vancouver)', off: -480 },
+  { label: 'GMT-10 · Hawaii', off: -600 },
+];
+
+/**
+ * Convert a local birth datetime (mid-hour) to Vietnam time (GMT+7),
+ * where the lunar calendar and giờ chi are defined.
+ */
+function toVietnamTime(d: number, m: number, y: number, hour: number, offMinutes: number) {
+  const utcMs = Date.UTC(y, m - 1, d, hour, 30) - offMinutes * 60000;
+  const vn = new Date(utcMs + 420 * 60000);
+  const minutes = vn.getUTCHours() * 60 + vn.getUTCMinutes();
+  return {
+    day: vn.getUTCDate(),
+    month: vn.getUTCMonth() + 1,
+    year: vn.getUTCFullYear(),
+    hourChi: Math.floor(((minutes + 60) % 1440) / 120),
+  };
+}
 
 /** Grid placement of the 12 chi palaces: [row, col] in a 4×4 board. */
 const GRID_POS: Record<number, [number, number]> = {
@@ -33,20 +73,26 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
   const [day, setDay] = useState(String(initial.day));
   const [month, setMonth] = useState(String(initial.month));
   const [year, setYear] = useState(String(initial.year));
-  const [hourChi, setHourChi] = useState(0);
+  const [hour, setHour] = useState(0);
+  const [tzIndex, setTzIndex] = useState(0);
   const [gender, setGender] = useState<Gender>('nam');
 
-  const chart: TuViChart | { error: string } = useMemo(() => {
+  const result = useMemo(() => {
     const d = parseInt(day, 10);
     const m = parseInt(month, 10);
     const y = parseInt(year, 10);
     if (!d || !m || !y || m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > 2100) {
-      return { error: 'Nhập ngày sinh dương lịch hợp lệ (1900–2100).' };
+      return { error: 'Nhập ngày sinh dương lịch hợp lệ (1900–2100).' } as const;
     }
     const maxDay = new Date(y, m, 0).getDate();
-    if (d > maxDay) return { error: `Tháng ${m}/${y} chỉ có ${maxDay} ngày.` };
-    return laSoTuVi(d, m, y, hourChi, gender);
-  }, [day, month, year, hourChi, gender]);
+    if (d > maxDay) return { error: `Tháng ${m}/${y} chỉ có ${maxDay} ngày.` } as const;
+    const vn = toVietnamTime(d, m, y, hour, TIMEZONES[tzIndex].off);
+    const converted =
+      TIMEZONES[tzIndex].off !== 420
+        ? `Quy đổi giờ Việt Nam: ${vn.day}/${vn.month}/${vn.year} · Giờ ${CHI[vn.hourChi]}`
+        : null;
+    return { chart: laSoTuVi(vn.day, vn.month, vn.year, vn.hourChi, gender), converted } as const;
+  }, [day, month, year, hour, tzIndex, gender]);
 
   return (
     <ScrollView
@@ -59,14 +105,34 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
       <Text style={s.pageTitle}>Lá số tử vi</Text>
 
       <View style={s.card}>
+        <Text style={s.sectionLabel}>Ngày sinh — dương lịch</Text>
         <View style={s.inputRow}>
-          <Field label="Ngày sinh" value={day} onChange={setDay} s={s} />
+          <Field label="Ngày" value={day} onChange={setDay} s={s} />
           <Field label="Tháng" value={month} onChange={setMonth} s={s} />
           <Field label="Năm" value={year} onChange={setYear} wide s={s} />
         </View>
 
-        <Text style={s.fieldLabel}>Giờ sinh</Text>
-        <HourDropdown value={hourChi} onChange={setHourChi} s={s} theme={theme} />
+        <Text style={s.fieldLabel}>Giờ sinh (giờ tại nơi sinh)</Text>
+        <Dropdown
+          title="Giờ sinh"
+          accessibilityLabel="Chọn giờ sinh"
+          options={Array.from({ length: 24 }, (_, h) => hourLabel(h))}
+          value={hour}
+          onChange={setHour}
+          s={s}
+          theme={theme}
+        />
+
+        <Text style={s.fieldLabel}>Nơi sinh (múi giờ)</Text>
+        <Dropdown
+          title="Nơi sinh (múi giờ)"
+          accessibilityLabel="Chọn múi giờ nơi sinh"
+          options={TIMEZONES.map((t) => t.label)}
+          value={tzIndex}
+          onChange={setTzIndex}
+          s={s}
+          theme={theme}
+        />
 
         <View style={s.genderRow}>
           {(['nam', 'nu'] as const).map((g) => (
@@ -81,25 +147,34 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
             </Pressable>
           ))}
         </View>
+        {'converted' in result && result.converted && (
+          <Text style={s.convertedNote}>{result.converted}</Text>
+        )}
       </View>
 
-      {'error' in chart ? (
+      {'error' in result ? (
         <View style={s.card}>
-          <Text style={s.error}>{chart.error}</Text>
+          <Text style={s.error}>{result.error}</Text>
         </View>
       ) : (
-        <Board chart={chart} s={s} theme={theme} />
+        <Board chart={result.chart} s={s} theme={theme} />
       )}
     </ScrollView>
   );
 }
 
-function HourDropdown({
+function Dropdown({
+  title,
+  accessibilityLabel,
+  options,
   value,
   onChange,
   s,
   theme,
 }: {
+  title: string;
+  accessibilityLabel: string;
+  options: string[];
   value: number;
   onChange: (i: number) => void;
   s: any;
@@ -111,18 +186,18 @@ function HourDropdown({
       <Pressable
         style={s.dropdown}
         onPress={() => setOpen(true)}
-        accessibilityLabel="Chọn giờ sinh"
+        accessibilityLabel={accessibilityLabel}
         accessibilityRole="combobox"
       >
-        <Text style={s.dropdownText}>{hourLabel(value)}</Text>
+        <Text style={s.dropdownText} numberOfLines={1}>{options[value]}</Text>
         <Ionicons name="chevron-down" size={16} color={theme.color.text.tertiary} />
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setOpen(false)}>
           <View style={s.modalSheet}>
-            <Text style={s.modalTitle}>Giờ sinh</Text>
+            <Text style={s.modalTitle}>{title}</Text>
             <ScrollView style={{ maxHeight: 420 }}>
-              {CHI.map((_, i) => (
+              {options.map((label, i) => (
                 <Pressable
                   key={i}
                   style={[s.modalOption, i === value && s.modalOptionOn]}
@@ -132,7 +207,7 @@ function HourDropdown({
                   }}
                 >
                   <Text style={[s.modalOptionText, i === value && s.modalOptionTextOn]}>
-                    {hourLabel(i)}
+                    {label}
                   </Text>
                   {i === value && (
                     <Ionicons name="checkmark" size={16} color={theme.color.text.accent} />
@@ -211,8 +286,9 @@ function Board({ chart, s, theme }: { chart: TuViChart; s: any; theme: Theme }) 
         </View>
       </View>
       <Text style={s.note}>
-        Số ở góc phải mỗi cung là tuổi khởi đại vận (10 năm). Lá số dùng giờ địa phương Việt Nam;
-        sinh 23h–1h chọn giờ Tý.
+        Số ở góc phải mỗi cung là tuổi khởi đại vận (10 năm). Ngày giờ sinh nhập theo dương lịch,
+        theo đồng hồ tại nơi sinh — lá số tự quy đổi về giờ Việt Nam (GMT+7) để tính âm lịch và giờ
+        chi. Nếu nơi sinh áp dụng giờ mùa hè (DST) vào lúc sinh, chọn múi giờ thực tế khi đó.
       </Text>
     </View>
   );
@@ -266,6 +342,17 @@ const styles = (t: Theme, isWide: boolean) =>
       ...t.shadow.card,
     },
     inputRow: { flexDirection: 'row', gap: t.space.sm, marginBottom: t.space.md },
+    sectionLabel: {
+      ...t.type.label,
+      color: t.color.text.accent,
+      marginBottom: t.space.sm,
+    } as object,
+    convertedNote: {
+      ...t.type.caption,
+      color: t.color.text.lunar,
+      marginTop: t.space.md,
+      textAlign: 'center',
+    } as object,
     fieldLabel: { ...t.type.micro, color: t.color.text.tertiary, marginBottom: 6 } as object,
     input: {
       borderWidth: 1.5,
