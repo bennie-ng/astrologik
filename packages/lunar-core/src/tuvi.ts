@@ -154,6 +154,14 @@ export interface TuViChart {
   yearCanChi: string;
   dayCanChi: string;
   hourName: string;
+  /** Can chi of the birth hour (ngũ thử độn), e.g. "Canh Tuất" */
+  hourCanChi: string;
+  /** Chủ mệnh star (by year chi) */
+  menhChu: string;
+  /** Chủ thân star (by year chi) */
+  thanChu: string;
+  /** Sinh/khắc relation between bản mệnh and cục, e.g. "Mệnh Mộc khắc Cục Thổ" */
+  cucRelation: string;
   /** "Dương Nam" | "Âm Nữ" … */
   amDuong: string;
   /** Cục, e.g. { name: "Hỏa lục cục", so: 6 } */
@@ -167,6 +175,62 @@ export interface TuViChart {
   /** Triệt Lộ Không Vong — the two palace chi it covers */
   triet: [number, number];
   palaces: TuViPalace[]; // indexed by chi 0..11
+}
+
+/** Chủ mệnh star by year-chi index. */
+const MENH_CHU = [
+  'Tham Lang',
+  'Cự Môn',
+  'Lộc Tồn',
+  'Văn Khúc',
+  'Liêm Trinh',
+  'Vũ Khúc',
+  'Phá Quân',
+  'Vũ Khúc',
+  'Liêm Trinh',
+  'Văn Khúc',
+  'Lộc Tồn',
+  'Cự Môn',
+];
+
+/** Chủ thân star by year-chi index. */
+const THAN_CHU = [
+  'Linh Tinh',
+  'Thiên Tướng',
+  'Thiên Lương',
+  'Thiên Đồng',
+  'Văn Xương',
+  'Thiên Cơ',
+  'Hỏa Tinh',
+  'Thiên Tướng',
+  'Thiên Lương',
+  'Thiên Đồng',
+  'Văn Xương',
+  'Thiên Cơ',
+];
+
+/** Ngũ hành sinh/khắc cycles. */
+const SINH: Record<NapAm['element'], NapAm['element']> = {
+  Mộc: 'Hỏa',
+  Hỏa: 'Thổ',
+  Thổ: 'Kim',
+  Kim: 'Thủy',
+  Thủy: 'Mộc',
+};
+const KHAC: Record<NapAm['element'], NapAm['element']> = {
+  Mộc: 'Thổ',
+  Thổ: 'Thủy',
+  Thủy: 'Hỏa',
+  Hỏa: 'Kim',
+  Kim: 'Mộc',
+};
+
+function menhCucRelation(menh: NapAm['element'], cuc: NapAm['element']): string {
+  if (menh === cuc) return 'Mệnh Cục tương hòa';
+  if (KHAC[menh] === cuc) return `Mệnh ${menh} khắc Cục ${cuc}`;
+  if (KHAC[cuc] === menh) return `Cục ${cuc} khắc Mệnh ${menh}`;
+  if (SINH[menh] === cuc) return `Mệnh ${menh} sinh Cục ${cuc}`;
+  return `Cục ${cuc} sinh Mệnh ${menh}`;
 }
 
 const CUNG_NAMES = [
@@ -514,12 +578,20 @@ export function laSoTuVi(
     });
   }
 
+  // Can of the birth hour via ngũ thử độn (day can → can of giờ Tý).
+  const hourCan = ((dCC.canIndex % 5) * 2 + h) % 10;
+  const banMenhNapAm = napAm(yCC.canIndex, yCC.chiIndex);
+
   return {
     input: { day, month, year, hourChi: h, gender },
     lunar,
     yearCanChi: yCC.name,
     dayCanChi: dCC.name,
     hourName: `Giờ ${CHI[h]}`,
+    hourCanChi: `${CAN[hourCan]} ${CHI[h]}`,
+    menhChu: MENH_CHU[yCC.chiIndex],
+    thanChu: THAN_CHU[yCC.chiIndex],
+    cucRelation: menhCucRelation(banMenhNapAm.element, menhNapAm.element),
     amDuong,
     cuc: { name: cuc.name, so: cuc.so, element: menhNapAm.element },
     banMenh: napAm(yCC.canIndex, yCC.chiIndex).name,

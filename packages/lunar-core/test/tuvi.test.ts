@@ -152,6 +152,25 @@ describe('laSoTuVi', () => {
     expect(chart.palaces[5].stars.map((s) => s.name)).toContain('LN Văn Tinh');
   });
 
+  it('matches the tuvi.vn reference chart (12/4/1989 19:30, nam)', () => {
+    // Reference lá số: sinh 12/4/1989 giờ Tuất — âm lịch 7/3 Kỷ Tỵ,
+    // ngày Nhâm Dần, giờ Canh Tuất, Đại Lâm Mộc, Thổ ngũ cục.
+    const c = laSoTuVi(12, 4, 1989, 10, 'nam');
+    expect(c.lunar).toMatchObject({ day: 7, month: 3, year: 1989 });
+    expect(c.yearCanChi).toBe('Kỷ Tỵ');
+    expect(c.dayCanChi).toBe('Nhâm Dần');
+    expect(c.hourCanChi).toBe('Canh Tuất');
+    expect(c.amDuong).toBe('Âm Nam');
+    expect(c.banMenh).toBe('Đại Lâm Mộc');
+    expect(c.cuc.name).toBe('Thổ ngũ cục');
+    expect(c.cucRelation).toBe('Mệnh Mộc khắc Cục Thổ');
+    expect(c.menhChu).toBe('Vũ Khúc');
+    expect(c.thanChu).toBe('Thiên Cơ');
+    // Đại vận per the reference: Mệnh 5, then nghịch 15, 25…
+    expect(c.palaces[c.menhIndex].daiVan).toBe(5);
+    expect(c.palaces[(c.menhIndex + 11) % 12].daiVan).toBe(15);
+  });
+
   it('every star carries ngũ hành and cát/hung nature', () => {
     for (const p of chart.palaces) {
       for (const st of p.stars) {

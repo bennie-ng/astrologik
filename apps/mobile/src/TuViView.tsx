@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CHI, laSoTuVi, type Gender, type TuViChart, type TuViStar } from 'lunar-core';
+import { CHI, laSoTuVi, yearCanChi, type Gender, type TuViChart, type TuViStar } from 'lunar-core';
 import { useTheme } from './design';
 import type { Theme } from './design';
 
@@ -129,6 +129,7 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
   const isWide = width >= 900;
   const s = useMemo(() => styles(theme, isWide), [theme, isWide]);
 
+  const [name, setName] = useState('');
   const [day, setDay] = useState(String(initial.day));
   const [month, setMonth] = useState(String(initial.month));
   const [year, setYear] = useState(String(initial.year));
@@ -164,6 +165,14 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
       <Text style={s.pageTitle}>Lá số tử vi</Text>
 
       <View style={s.card}>
+        <Text style={s.fieldLabel}>Họ tên (tùy chọn)</Text>
+        <TextInput
+          style={[s.input, { marginBottom: theme.space.md }]}
+          value={name}
+          onChangeText={setName}
+          placeholder="Nguyễn Văn A"
+          placeholderTextColor={theme.color.text.disabled}
+        />
         <Text style={s.sectionLabel}>Ngày sinh — dương lịch</Text>
         <View style={s.inputRow}>
           <Field label="Ngày" value={day} onChange={setDay} s={s} />
@@ -216,7 +225,7 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
           <Text style={s.error}>{result.error}</Text>
         </View>
       ) : (
-        <Board chart={result.chart} s={s} theme={theme} />
+        <Board chart={result.chart} name={name} s={s} theme={theme} />
       )}
     </ScrollView>
   );
@@ -281,7 +290,25 @@ function Dropdown({
   );
 }
 
-function Board({ chart, s, theme }: { chart: TuViChart; s: any; theme: Theme }) {
+/** Hour range of a giờ chi, e.g. Tuất → "19h–21h". */
+const chiRange = (h: number) => `${(h * 2 + 23) % 24}h–${(h * 2 + 1) % 24}h`;
+
+function CenterRow({ label, value, s }: { label: string; value: string; s: any }) {
+  return (
+    <View style={s.centerRow}>
+      <Text style={s.centerLabel}>{label}</Text>
+      <Text style={s.centerValue} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: any; theme: Theme }) {
+  const now = new Date();
+  const namXem = now.getFullYear();
+  const tuoi = namXem - chart.lunar.year + 1;
+  const namXemCC = yearCanChi(namXem).name;
   return (
     <View style={s.boardWrap}>
       <View style={s.board}>
@@ -358,18 +385,34 @@ function Board({ chart, s, theme }: { chart: TuViChart; s: any; theme: Theme }) 
         })}
 
         <View style={s.center}>
-          <Text style={s.centerTitle}>
-            {chart.input.day}/{chart.input.month}/{chart.input.year} · {chart.hourName}
+          <Text style={s.centerTitle} numberOfLines={1}>
+            {name.trim() || 'Lá số tử vi'}
           </Text>
-          <Text style={s.centerLine}>
-            Âm lịch: {chart.lunar.day}/{chart.lunar.month}
-            {chart.lunar.leap ? ' nhuận' : ''} năm {chart.yearCanChi}
-          </Text>
-          <Text style={s.centerLine}>Ngày {chart.dayCanChi}</Text>
           <View style={s.centerDivider} />
-          <Text style={s.centerStrong}>{chart.amDuong}</Text>
-          <Text style={s.centerStrong}>Bản mệnh: {chart.banMenh}</Text>
-          <Text style={s.centerStrong}>{chart.cuc.name}</Text>
+          <CenterRow label="Năm" value={`${chart.input.year} · ${chart.yearCanChi}`} s={s} />
+          <CenterRow
+            label="Tháng"
+            value={`${chart.input.month} (âm ${chart.lunar.month}${chart.lunar.leap ? ' nhuận' : ''})`}
+            s={s}
+          />
+          <CenterRow
+            label="Ngày"
+            value={`${chart.input.day} (âm ${chart.lunar.day}) · ${chart.dayCanChi}`}
+            s={s}
+          />
+          <CenterRow
+            label="Giờ"
+            value={`${chart.hourCanChi} (${chiRange(chart.input.hourChi)})`}
+            s={s}
+          />
+          <CenterRow label="Năm xem" value={`${namXemCC} (${namXem}) · ${tuoi} tuổi`} s={s} />
+          <View style={s.centerDivider} />
+          <CenterRow label="Âm dương" value={chart.amDuong} s={s} />
+          <CenterRow label="Bản mệnh" value={chart.banMenh} s={s} />
+          <CenterRow label="Cục" value={chart.cuc.name} s={s} />
+          <CenterRow label="Sinh khắc" value={chart.cucRelation} s={s} />
+          <CenterRow label="Chủ mệnh" value={chart.menhChu} s={s} />
+          <CenterRow label="Chủ thân" value={chart.thanChu} s={s} />
         </View>
       </View>
       <Text style={s.note}>
@@ -550,9 +593,10 @@ const styles = (t: Theme, isWide: boolean) =>
       ...t.face.bold,
       color: t.color.text.accent,
       textTransform: 'uppercase',
+      textAlign: 'center',
       marginBottom: 1,
     } as object,
-    tagRow: { flexDirection: 'row', gap: 3, marginBottom: 1 },
+    tagRow: { flexDirection: 'row', gap: 3, marginBottom: 1, alignSelf: 'center' },
     tag: {
       fontSize: isWide ? 9 : 6.5,
       ...t.face.bold,
@@ -563,7 +607,12 @@ const styles = (t: Theme, isWide: boolean) =>
       paddingHorizontal: 3,
       overflow: 'hidden',
     } as object,
-    starMajor: { fontSize: isWide ? 12 : 8.5, ...t.face.semibold, color: t.color.text.primary } as object,
+    starMajor: {
+      fontSize: isWide ? 12 : 8.5,
+      ...t.face.bold,
+      textAlign: 'center',
+      textTransform: 'uppercase',
+    } as object,
     starHoa: { color: t.color.text.lunar, ...t.face.semibold } as object,
     minorRow: { flexDirection: 'row', flex: 1, gap: 2, marginTop: 1 },
     minorCol: { flex: 1, minWidth: 0 },
@@ -585,27 +634,45 @@ const styles = (t: Theme, isWide: boolean) =>
       left: '25%',
       width: '50%',
       height: '50%',
-      alignItems: 'center',
       justifyContent: 'center',
-      padding: t.space.md,
+      paddingHorizontal: isWide ? t.space.xl : t.space.md,
+      paddingVertical: t.space.sm,
       backgroundColor: t.color.bg.elevated,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.color.border.subtle,
     },
-    centerTitle: { fontSize: isWide ? 15 : 11, ...t.face.bold, color: t.color.text.primary } as object,
-    centerLine: {
-      fontSize: isWide ? 12 : 9,
-      ...t.face.regular,
-      color: t.color.text.secondary,
-      marginTop: 2,
+    centerTitle: {
+      fontSize: isWide ? 16 : 11,
+      ...t.face.bold,
+      color: t.color.text.accent,
+      textAlign: 'center',
+      textTransform: 'uppercase',
+    } as object,
+    centerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+      gap: t.space.sm,
+      marginVertical: isWide ? 1.5 : 0.5,
+    },
+    centerLabel: {
+      fontSize: isWide ? 12 : 8,
+      ...t.face.semibold,
+      color: t.color.text.tertiary,
+    } as object,
+    centerValue: {
+      fontSize: isWide ? 12.5 : 8.5,
+      ...t.face.semibold,
+      color: t.color.text.primary,
+      flexShrink: 1,
+      textAlign: 'right',
     } as object,
     centerDivider: {
       height: 1,
       alignSelf: 'stretch',
       backgroundColor: t.color.border.strong,
-      marginVertical: t.space.sm,
+      marginVertical: isWide ? t.space.sm : 4,
     },
-    centerStrong: { fontSize: isWide ? 13 : 9.5, ...t.face.semibold, color: t.color.text.accent } as object,
     note: {
       ...t.type.caption,
       color: t.color.text.tertiary,
