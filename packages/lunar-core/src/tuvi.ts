@@ -80,7 +80,7 @@ const STAR_INFO: Record<string, [NapAm['element'], 'cat' | 'hung']> = {
   'Hỏa Tinh': ['Hỏa', 'hung'],
   'Linh Tinh': ['Hỏa', 'hung'],
   'Kiếp Sát': ['Hỏa', 'hung'],
-  'Thiên Không': ['Thủy', 'hung'],
+  'Thiên Không': ['Hỏa', 'hung'],
   // Văn tinh, quý tinh
   'Văn Xương': ['Kim', 'cat'],
   'Văn Khúc': ['Thủy', 'cat'],
