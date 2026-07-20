@@ -441,16 +441,7 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
   const result = useMemo(() => (submitted ? computeResult(submitted) : null), [submitted]);
   const { name, day, month, year, hour, tzIndex, gender, namXem } = form;
 
-  return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{
-        paddingHorizontal: theme.space.lg,
-        paddingBottom: isWide ? theme.space.xl : 120,
-      }}
-    >
-      <Text style={s.pageTitle}>Lá số tử vi</Text>
-
+  const formCard = (
       <View style={s.card}>
         <Text style={s.fieldLabel}>Họ tên (tùy chọn)</Text>
         <TextInput
@@ -554,17 +545,41 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
           <Text style={s.convertedNote}>{result.converted}</Text>
         )}
       </View>
+  );
 
-      {result === null ? (
-        <View style={s.card}>
-          <Text style={s.hint}>Nhập thông tin sinh và bấm "Lập lá số" để xem lá số.</Text>
-        </View>
-      ) : 'error' in result ? (
-        <View style={s.card}>
-          <Text style={s.error}>{result.error}</Text>
+  const chartArea =
+    result === null ? (
+      <View style={s.card}>
+        <Text style={s.hint}>Nhập thông tin sinh và bấm "Lập lá số" để xem lá số.</Text>
+      </View>
+    ) : 'error' in result ? (
+      <View style={s.card}>
+        <Text style={s.error}>{result.error}</Text>
+      </View>
+    ) : (
+      <Board chart={result.chart} name={result.name} s={s} theme={theme} />
+    );
+
+  return (
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{
+        paddingHorizontal: theme.space.lg,
+        paddingBottom: isWide ? theme.space.xl : 120,
+      }}
+    >
+      <Text style={s.pageTitle}>Lá số tử vi</Text>
+
+      {isWide ? (
+        <View style={s.wideRow}>
+          <View style={s.formCol}>{formCard}</View>
+          <View style={s.boardCol}>{chartArea}</View>
         </View>
       ) : (
-        <Board chart={result.chart} name={result.name} s={s} theme={theme} />
+        <>
+          {formCard}
+          {chartArea}
+        </>
       )}
     </ScrollView>
   );
@@ -1114,7 +1129,11 @@ const styles = (t: Theme, isWide: boolean) =>
     },
     submitText: { ...t.type.headline, color: t.color.text.onAccent } as object,
 
-    boardWrap: { maxWidth: isWide ? 860 : 560, width: '100%', alignSelf: 'center' },
+    // Desktop: form as a fixed left column, board filling the rest.
+    wideRow: { flexDirection: 'row', gap: t.space.lg, alignItems: 'flex-start' },
+    formCol: { width: 400, flexShrink: 0 },
+    boardCol: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
+    boardWrap: { maxWidth: isWide ? 1120 : 560, width: '100%', alignSelf: 'center' },
     board: {
       width: '100%',
       // Phones get taller cells so star text stays at a size Safari

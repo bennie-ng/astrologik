@@ -5,7 +5,14 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Platform, type ViewStyle } from 'react-native';
+import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
+  Platform,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 export function useReduceMotion(): boolean {
   const [reduce, setReduce] = useState(false);
@@ -34,7 +41,7 @@ export function FadeIn({
   children,
 }: {
   trigger: string | number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   children: React.ReactNode;
 }) {
   const reduce = useReduceMotion();
