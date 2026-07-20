@@ -23,7 +23,20 @@ export interface TuViStar {
   nature: 'cat' | 'hung';
   /** Tứ hóa attached to this star, if any */
   hoa?: 'Hóa Lộc' | 'Hóa Quyền' | 'Hóa Khoa' | 'Hóa Kỵ';
+  /** Độ sáng at this palace: Miếu/Vượng/Đắc/Bình/Hãm (for rated stars) */
+  dac?: Brightness;
 }
+
+export type Brightness = 'M' | 'V' | 'Đ' | 'B' | 'H';
+
+/** Full names of the brightness letters, for display. */
+export const BRIGHTNESS_NAME: Record<Brightness, string> = {
+  M: 'Miếu',
+  V: 'Vượng',
+  Đ: 'Đắc',
+  B: 'Bình',
+  H: 'Hãm',
+};
 
 /**
  * Ngũ hành and cát/hung nature per star, following the classification
@@ -131,6 +144,54 @@ const STAR_INFO: Record<string, [NapAm['element'], 'cat' | 'hung']> = {
   'Thiên La': ['Thổ', 'hung'],
   'Địa Võng': ['Thổ', 'hung'],
 };
+
+/**
+ * Độ sáng per star: one letter per palace chi, index 0 = Tý ('.' = the
+ * star is not rated there). Follows the reference lasotuvi matrix, with
+ * two corrections against classical sources: Văn Xương/Văn Khúc use the
+ * canonical rule (đắc in the six âm cung — lasotuvi swaps Dậu/Tuất) and
+ * Thiên Phủ is added (miếu Dần Thân Tý Ngọ, vượng Thìn Tuất, đắc Tỵ Hợi
+ * Mùi, bình elsewhere — it is never hãm).
+ */
+const BRIGHTNESS: Record<string, string> = {
+  //             Tý Sửu Dần Mão Thìn Tỵ Ngọ Mùi Thân Dậu Tuất Hợi
+  'Tử Vi': 'BĐMBVMMĐMBVB',
+  'Liêm Trinh': 'VĐVHMHVĐVHMH',
+  'Thiên Đồng': 'VHMĐHĐHHMHHĐ',
+  'Vũ Khúc': 'VMVĐMHVMVĐMH',
+  'Thái Dương': 'HĐVVVMMĐHHHH',
+  'Thiên Cơ': 'ĐĐHMMVĐĐVMMH',
+  'Thiên Phủ': 'MBMBVĐMĐMBVĐ',
+  'Thái Âm': 'VĐHHHHHĐVMMM',
+  'Tham Lang': 'HMĐHVHHMĐHVH',
+  'Cự Môn': 'VHVMHHVHĐMHĐ',
+  'Thiên Tướng': 'VĐMHVĐVĐMHVĐ',
+  'Thiên Lương': 'VĐVVMHMĐVHMH',
+  'Thất Sát': 'MĐMHHVMĐMHHV',
+  'Phá Quân': 'MVHHĐHMVHHĐH',
+  'Kình Dương': 'HĐHHĐHHĐHHĐH',
+  'Đà La': 'HĐHHĐHHĐHHĐH',
+  'Hỏa Tinh': 'HHĐĐĐĐĐHHHHH',
+  'Linh Tinh': 'HHĐĐĐĐĐHHHHH',
+  'Địa Không': 'HHĐHHĐHHĐHHĐ',
+  'Địa Kiếp': 'HHĐHHĐHHĐHHĐ',
+  'Văn Xương': 'HĐHĐHĐHĐHĐHĐ',
+  'Văn Khúc': 'HĐHĐHĐHĐHĐHĐ',
+  'Hóa Kỵ': '.Đ..Đ..Đ..Đ.',
+  'Đại Hao': '..ĐĐ....ĐĐ..',
+  'Tiểu Hao': '..ĐĐ....ĐĐ..',
+  'Thiên Khốc': 'ĐĐ.Đ..ĐĐ.Đ..',
+  'Thiên Hư': 'ĐĐ.Đ..ĐĐ.Đ..',
+  'Thiên Mã': '..Đ..Đ......',
+  'Thiên Hình': '..ĐĐ....ĐĐ..',
+  'Thiên Riêu': '..ĐĐ.....ĐĐ.',
+};
+
+/** Độ sáng of `name` in the palace at `chi` (0 = Tý), if the star is rated. */
+export function starBrightness(name: string, chi: number): Brightness | undefined {
+  const b = BRIGHTNESS[name]?.[((chi % 12) + 12) % 12];
+  return b && b !== '.' ? (b as Brightness) : undefined;
+}
 
 export interface TuViPalace {
   chiIndex: number;
@@ -445,7 +506,8 @@ export function laSoTuVi(
     if (!info) throw new Error(`Missing STAR_INFO for ${name}`);
     const c = mod12(chi);
     if (!stars.has(c)) stars.set(c, []);
-    stars.get(c)!.push({ name, kind, element: info[0], nature: info[1] });
+    const dac = starBrightness(name, c);
+    stars.get(c)!.push({ name, kind, element: info[0], nature: info[1], ...(dac ? { dac } : {}) });
   };
 
   const tv = tuViPosition(cuc.so, lunar.day);

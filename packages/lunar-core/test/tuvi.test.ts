@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { laSoTuVi, tuViPosition, CHI } from '../src';
+import { laSoTuVi, starBrightness, tuViPosition, CHI } from '../src';
 
 describe('tuViPosition (an sao Tử Vi theo cục)', () => {
   it('matches the classical table for Thủy nhị cục', () => {
@@ -231,5 +231,69 @@ describe('laSoTuVi', () => {
     expect(find('Thiên Phúc')).toMatchObject({ element: 'Thổ', nature: 'cat' });
     expect(find('Lực Sĩ')).toMatchObject({ element: 'Hỏa', nature: 'cat' });
     expect(find('Thiên Đức')).toMatchObject({ element: 'Hỏa', nature: 'cat' });
+  });
+});
+
+describe('độ sáng (miếu / vượng / đắc / bình / hãm)', () => {
+  const T = { ty: 0, suu: 1, dan: 2, mao: 3, thin: 4, ti: 5, ngo: 6, mui: 7, than: 8, dau: 9, tuat: 10, hoi: 11 };
+
+  it('follows the classical table for the sun and moon', () => {
+    expect(starBrightness('Thái Dương', T.ngo)).toBe('M'); // sun at noon
+    expect(starBrightness('Thái Dương', T.ty)).toBe('H'); // sun at midnight
+    expect(starBrightness('Thái Âm', T.dau)).toBe('M');
+    expect(starBrightness('Thái Âm', T.hoi)).toBe('M');
+    expect(starBrightness('Thái Âm', T.ngo)).toBe('H');
+  });
+
+  it('Thiên Phủ is rated everywhere and never hãm', () => {
+    for (let chi = 0; chi < 12; chi++) {
+      const b = starBrightness('Thiên Phủ', chi);
+      expect(b).toBeDefined();
+      expect(b).not.toBe('H');
+    }
+    expect(starBrightness('Thiên Phủ', T.dan)).toBe('M');
+    expect(starBrightness('Thiên Phủ', T.thin)).toBe('V');
+    expect(starBrightness('Thiên Phủ', T.ti)).toBe('Đ');
+    expect(starBrightness('Thiên Phủ', T.mao)).toBe('B');
+  });
+
+  it('Văn Xương/Văn Khúc: đắc in the six âm cung, hãm in the six dương cung', () => {
+    for (let chi = 0; chi < 12; chi++) {
+      expect(starBrightness('Văn Xương', chi)).toBe(chi % 2 === 1 ? 'Đ' : 'H');
+      expect(starBrightness('Văn Khúc', chi)).toBe(chi % 2 === 1 ? 'Đ' : 'H');
+    }
+  });
+
+  it('bàng tinh with partial ratings: đắc only at their classical positions', () => {
+    // Hóa Kỵ đắc at the four mộ cung
+    for (let chi = 0; chi < 12; chi++) {
+      expect(starBrightness('Hóa Kỵ', chi)).toBe([1, 4, 7, 10].includes(chi) ? 'Đ' : undefined);
+    }
+    expect(starBrightness('Thiên Hình', T.dan)).toBe('Đ');
+    expect(starBrightness('Thiên Hình', T.ty)).toBeUndefined();
+    expect(starBrightness('Thiên Mã', T.dan)).toBe('Đ');
+    expect(starBrightness('Thiên Mã', T.than)).toBeUndefined();
+    // Unrated stars have no brightness anywhere
+    expect(starBrightness('Tả Phù', T.dan)).toBeUndefined();
+    expect(starBrightness('Lộc Tồn', T.dan)).toBeUndefined();
+  });
+
+  it('placed stars carry dac matching their palace', () => {
+    const c = laSoTuVi(12, 4, 1989, 10, 'nam');
+    for (const p of c.palaces) {
+      for (const st of p.stars) {
+        if (st.kind === 'luu') {
+          expect(st.dac).toBeUndefined();
+        } else {
+          expect(st.dac).toBe(starBrightness(st.name, p.chiIndex));
+        }
+      }
+    }
+    // Every chính tinh must be rated at its palace
+    for (const p of c.palaces) {
+      for (const st of p.stars.filter((s) => s.kind === 'chinh')) {
+        expect(st.dac, `${st.name} @ ${CHI[p.chiIndex]}`).toBeDefined();
+      }
+    }
   });
 });

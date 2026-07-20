@@ -10,7 +10,16 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CHI, laSoTuVi, type Gender, type TuViChart, type TuViStar } from 'lunar-core';
+import {
+  BRIGHTNESS_NAME,
+  CHI,
+  laSoTuVi,
+  starBrightness,
+  type Brightness,
+  type Gender,
+  type TuViChart,
+  type TuViStar,
+} from 'lunar-core';
 import { useTheme } from './design';
 import type { Theme } from './design';
 
@@ -37,10 +46,12 @@ interface ColItem {
   name: string;
   element: string;
   nature: 'cat' | 'hung';
+  /** Độ sáng letter (M/V/Đ/B/H), when the star is rated at this palace */
+  dac?: string;
 }
 
 /** Cát/hung columns: phụ tinh, then tứ hóa entries, then lưu niên stars. */
-function columns(stars: TuViStar[]): { cat: ColItem[]; hung: ColItem[] } {
+function columns(stars: TuViStar[], chi: number): { cat: ColItem[]; hung: ColItem[] } {
   const items: ColItem[] = [
     ...stars.filter((st) => st.kind === 'phu'),
     ...stars
@@ -49,6 +60,7 @@ function columns(stars: TuViStar[]): { cat: ColItem[]; hung: ColItem[] } {
         name: st.hoa!,
         element: HOA_ELEMENT[st.hoa!],
         nature: (st.hoa === 'Hóa Kỵ' ? 'hung' : 'cat') as ColItem['nature'],
+        dac: starBrightness(st.hoa!, chi),
       })),
     ...stars.filter((st) => st.kind === 'luu'),
   ];
@@ -725,12 +737,15 @@ function MinorColumn({
   items,
   cap,
   right,
+  showDac,
   s,
   theme,
 }: {
   items: ColItem[];
   cap: number;
   right?: boolean;
+  /** Append the độ sáng letter — off on phones, where it would only truncate */
+  showDac?: boolean;
   s: any;
   theme: Theme;
 }) {
@@ -745,6 +760,7 @@ function MinorColumn({
           numberOfLines={1}
         >
           {it.name}
+          {showDac && it.dac ? ` (${it.dac})` : ''}
         </Text>
       ))}
       {overflow > 0 && (
@@ -798,17 +814,18 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
                     numberOfLines={1}
                   >
                     {st.name}
+                    {st.dac ? ` (${st.dac})` : ''}
                   </Text>
                 ))}
               {(() => {
-                const cols = columns(p.stars);
+                const cols = columns(p.stars, p.chiIndex);
                 const majors = p.stars.filter((st) => st.kind === 'chinh').length;
                 // Phone cells are fixed-height; cap rows so lines never overlap.
                 const cap = isWide ? 99 : majors >= 2 ? 4 : majors === 1 ? 5 : 6;
                 return (
                   <View style={s.minorRow}>
-                    <MinorColumn items={cols.cat} cap={cap} s={s} theme={theme} />
-                    <MinorColumn items={cols.hung} cap={cap} right s={s} theme={theme} />
+                    <MinorColumn items={cols.cat} cap={cap} showDac={isWide} s={s} theme={theme} />
+                    <MinorColumn items={cols.hung} cap={cap} right showDac={isWide} s={s} theme={theme} />
                   </View>
                 );
               })()}
@@ -879,7 +896,7 @@ function PalaceSheet({
   theme: Theme;
 }) {
   if (!palace) return null;
-  const cols = columns(palace.stars);
+  const cols = columns(palace.stars, palace.chiIndex);
   const majors = palace.stars.filter((st) => st.kind === 'chinh');
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -900,6 +917,7 @@ function PalaceSheet({
             {majors.map((st) => (
               <Text key={st.name} style={[s.sheetMajor, { color: starColor(st, theme) }]}>
                 {st.name}
+                {st.dac ? ` (${BRIGHTNESS_NAME[st.dac]})` : ''}
               </Text>
             ))}
             <View style={s.sheetCols}>
@@ -908,6 +926,7 @@ function PalaceSheet({
                 {cols.cat.map((it) => (
                   <Text key={it.name} style={[s.sheetStar, { color: starColor(it, theme) }]}>
                     {it.name}
+                    {it.dac ? ` (${BRIGHTNESS_NAME[it.dac as Brightness]})` : ''}
                   </Text>
                 ))}
               </View>
@@ -916,6 +935,7 @@ function PalaceSheet({
                 {cols.hung.map((it) => (
                   <Text key={it.name} style={[s.sheetStar, { color: starColor(it, theme) }]}>
                     {it.name}
+                    {it.dac ? ` (${BRIGHTNESS_NAME[it.dac as Brightness]})` : ''}
                   </Text>
                 ))}
               </View>
