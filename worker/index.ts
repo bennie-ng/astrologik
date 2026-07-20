@@ -20,6 +20,18 @@ const SITE_URL = 'https://astrologik.app';
 const MIN_YEAR = 1900;
 const MAX_YEAR = 2100;
 
+/** Google Analytics 4 measurement ID (shared with the SPA shell). */
+const GA_ID = 'G-MC8W407BM2';
+const GA_SNIPPET = GA_ID
+  ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_ID}');
+</script>`
+  : '';
+
 const WEEKDAYS = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -88,6 +100,7 @@ function dayPage(info: DayInfo): string {
   a{color:#8A4B3C}
   .app{display:block;text-align:center;background:#8A4B3C;color:#fff;text-decoration:none;border-radius:16px;padding:14px;margin-top:28px;font-weight:600}
 </style>
+${GA_SNIPPET}
 </head>
 <body>
 <main>
