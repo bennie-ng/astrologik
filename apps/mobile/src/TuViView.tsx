@@ -494,7 +494,7 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
                 const cols = columns(p.stars);
                 const majors = p.stars.filter((st) => st.kind === 'chinh').length;
                 // Phone cells are fixed-height; cap rows so lines never overlap.
-                const cap = isWide ? 99 : majors >= 2 ? 3 : majors === 1 ? 4 : 5;
+                const cap = isWide ? 99 : majors >= 2 ? 4 : majors === 1 ? 5 : 6;
                 return (
                   <View style={s.minorRow}>
                     <MinorColumn items={cols.cat} cap={cap} s={s} theme={theme} />
@@ -763,7 +763,9 @@ const styles = (t: Theme, isWide: boolean) =>
     boardWrap: { maxWidth: isWide ? 860 : 560, width: '100%', alignSelf: 'center' },
     board: {
       width: '100%',
-      aspectRatio: 1,
+      // Phones get taller cells so star text stays at a size Safari
+      // won't inflate; desktop keeps the classic square.
+      aspectRatio: isWide ? 1 : 3 / 4,
       backgroundColor: t.color.bg.surface,
       borderRadius: t.radius.card,
       borderWidth: 1,
@@ -783,14 +785,14 @@ const styles = (t: Theme, isWide: boolean) =>
     palaceMenh: { backgroundColor: t.color.bg.accentSoft },
     palaceHead: { flexDirection: 'row', justifyContent: 'space-between' },
     palaceCanChi: {
-      fontSize: isWide ? 11 : 8,
+      fontSize: isWide ? 11 : 9,
       ...t.face.medium,
       color: t.color.text.tertiary,
       flexShrink: 1,
     } as object,
-    palaceDaiVan: { fontSize: isWide ? 11 : 8, ...t.face.bold, color: t.color.text.lunar } as object,
+    palaceDaiVan: { fontSize: isWide ? 11 : 9, ...t.face.bold, color: t.color.text.lunar } as object,
     palaceCung: {
-      fontSize: isWide ? 13 : 9,
+      fontSize: isWide ? 13 : 10,
       ...t.face.bold,
       color: t.color.text.accent,
       textTransform: 'uppercase',
@@ -808,7 +810,7 @@ const styles = (t: Theme, isWide: boolean) =>
     },
     bottomRow: { flexDirection: 'row', gap: t.space.sm, alignItems: 'flex-end' },
     tag: {
-      fontSize: isWide ? 9 : 6.5,
+      fontSize: isWide ? 9 : 8,
       ...t.face.bold,
       color: t.color.state.bad,
       borderWidth: 1,
@@ -819,7 +821,7 @@ const styles = (t: Theme, isWide: boolean) =>
       flexShrink: 0,
     } as object,
     starMajor: {
-      fontSize: isWide ? 12 : 8.5,
+      fontSize: isWide ? 12 : 10,
       ...t.face.bold,
       textAlign: 'center',
       textTransform: 'uppercase',
@@ -829,15 +831,15 @@ const styles = (t: Theme, isWide: boolean) =>
     minorRow: { flexDirection: 'row', flex: 1, gap: 2, marginTop: 1, overflow: 'hidden' },
     minorCol: { flex: 1, minWidth: 0 },
     starMinor: {
-      fontSize: isWide ? 9.5 : 6.5,
-      lineHeight: isWide ? 13 : 9,
+      fontSize: isWide ? 9.5 : 8,
+      lineHeight: isWide ? 13 : 11,
       flexShrink: 0,
       ...t.face.medium,
     } as object,
     starMinorHung: { textAlign: 'right' },
     minorMore: { color: t.color.text.tertiary, ...t.face.semibold } as object,
     palaceTrangSinh: {
-      fontSize: isWide ? 10 : 7,
+      fontSize: isWide ? 10 : 8.5,
       ...t.face.medium,
       color: t.color.state.good,
       textAlign: 'right',
@@ -856,7 +858,7 @@ const styles = (t: Theme, isWide: boolean) =>
       borderColor: t.color.border.subtle,
     },
     centerTitle: {
-      fontSize: isWide ? 16 : 11,
+      fontSize: isWide ? 16 : 12,
       ...t.face.bold,
       color: t.color.text.accent,
       textAlign: 'center',
@@ -870,12 +872,12 @@ const styles = (t: Theme, isWide: boolean) =>
       marginVertical: isWide ? 1.5 : 0.5,
     },
     centerLabel: {
-      fontSize: isWide ? 12 : 8,
+      fontSize: isWide ? 12 : 9,
       ...t.face.semibold,
       color: t.color.text.tertiary,
     } as object,
     centerValue: {
-      fontSize: isWide ? 12.5 : 8.5,
+      fontSize: isWide ? 12.5 : 9.5,
       ...t.face.semibold,
       color: t.color.text.primary,
       flexShrink: 1,
