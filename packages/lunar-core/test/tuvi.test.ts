@@ -128,10 +128,27 @@ describe('laSoTuVi', () => {
     expect(at('Bát Tọa')).toBe(at('Hữu Bật'));
   });
 
-  it('places the full star set (90 stars)', () => {
+  it('places the full star set (93 stars, the classical count)', () => {
     const total = chart.palaces.reduce((n, p) => n + p.stars.length, 0);
-    expect(total).toBe(90);
+    expect(total).toBe(93);
     const names = chart.palaces.flatMap((p) => p.stars.map((s) => s.name));
-    expect(new Set(names).size).toBe(90); // no duplicates
+    expect(new Set(names).size).toBe(93); // no duplicates
+  });
+
+  it('Tuần/Triệt năm Giáp Tý: Tuần tại Tuất-Hợi, Triệt tại Thân-Dậu', () => {
+    expect(chart.tuan).toEqual([10, 11]);
+    expect(chart.triet).toEqual([8, 9]);
+  });
+
+  it('Tuần/Triệt năm Ất Sửu: cùng tuần giáp → Tuất-Hợi; Triệt Ngọ-Mùi', () => {
+    const c2 = laSoTuVi(21, 2, 1985, 3, 'nu');
+    expect(c2.tuan).toEqual([10, 11]);
+    expect(c2.triet).toEqual([6, 7]);
+  });
+
+  it('Thiên La tại Thìn, Địa Võng tại Tuất, LN Văn Tinh năm Giáp tại Tỵ', () => {
+    expect(chart.palaces[4].stars.map((s) => s.name)).toContain('Thiên La');
+    expect(chart.palaces[10].stars.map((s) => s.name)).toContain('Địa Võng');
+    expect(chart.palaces[5].stars.map((s) => s.name)).toContain('LN Văn Tinh');
   });
 });

@@ -170,6 +170,12 @@ function Board({ chart, s, theme }: { chart: TuViChart; s: any; theme: Theme }) 
                 {p.cung}
                 {p.than ? ' · Thân' : ''}
               </Text>
+              {(chart.tuan.includes(p.chiIndex) || chart.triet.includes(p.chiIndex)) && (
+                <View style={s.tagRow}>
+                  {chart.tuan.includes(p.chiIndex) && <Text style={s.tag}>TUẦN</Text>}
+                  {chart.triet.includes(p.chiIndex) && <Text style={s.tag}>TRIỆT</Text>}
+                </View>
+              )}
               {p.stars
                 .filter((st) => st.kind === 'chinh')
                 .map((st) => (
@@ -370,6 +376,17 @@ const styles = (t: Theme, isWide: boolean) =>
       color: t.color.text.accent,
       textTransform: 'uppercase',
       marginBottom: 1,
+    } as object,
+    tagRow: { flexDirection: 'row', gap: 3, marginBottom: 1 },
+    tag: {
+      fontSize: isWide ? 9 : 6.5,
+      ...t.face.bold,
+      color: t.color.state.bad,
+      borderWidth: 1,
+      borderColor: t.color.state.bad,
+      borderRadius: 3,
+      paddingHorizontal: 3,
+      overflow: 'hidden',
     } as object,
     starMajor: { fontSize: isWide ? 12 : 8.5, ...t.face.semibold, color: t.color.text.primary } as object,
     starHoa: { color: t.color.text.lunar, ...t.face.semibold } as object,

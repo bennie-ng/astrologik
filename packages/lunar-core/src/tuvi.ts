@@ -10,7 +10,7 @@
 
 import { CAN, CHI, dayCanChi, yearCanChi } from './canchi';
 import { solarToLunar, type LunarDate } from './lunar';
-import { napAm, type NapAm } from './nguhanh';
+import { napAm, sexagenaryIndex, type NapAm } from './nguhanh';
 
 export type Gender = 'nam' | 'nu';
 
@@ -51,6 +51,10 @@ export interface TuViChart {
   banMenh: string;
   menhIndex: number;
   thanIndex: number;
+  /** Tuần Trung Không Vong — the two palace chi it covers */
+  tuan: [number, number];
+  /** Triệt Lộ Không Vong — the two palace chi it covers */
+  triet: [number, number];
   palaces: TuViPalace[]; // indexed by chi 0..11
 }
 
@@ -152,6 +156,16 @@ function coQua(yearChi: number): [number, number] {
 
 /** Lưu Hà by year-can index. */
 const LUU_HA = [9, 10, 7, 8, 5, 6, 4, 3, 11, 2];
+/** Lưu Niên Văn Tinh by year-can index. */
+const LN_VAN_TINH = [5, 6, 8, 9, 8, 9, 11, 0, 2, 3];
+/** Triệt Lộ Không Vong pair by year-can index % 5. */
+const TRIET: ReadonlyArray<readonly [number, number]> = [
+  [8, 9], // Giáp, Kỷ → Thân Dậu
+  [6, 7], // Ất, Canh → Ngọ Mùi
+  [4, 5], // Bính, Tân → Thìn Tỵ
+  [2, 3], // Đinh, Nhâm → Dần Mão
+  [0, 1], // Mậu, Quý → Tý Sửu
+];
 /** Thiên Trù by year-can index. */
 const THIEN_TRU = [5, 6, 0, 5, 6, 8, 2, 6, 9, 10];
 /** Thiên Quan quý nhân by year-can index. */
@@ -343,6 +357,17 @@ export function laSoTuVi(
   put(menh + 5, 'Thiên Thương', 'phu');
   put(menh + 7, 'Thiên Sứ', 'phu');
 
+  // Cố định và theo can năm.
+  put(4, 'Thiên La', 'phu');
+  put(10, 'Địa Võng', 'phu');
+  put(LN_VAN_TINH[yCC.canIndex], 'LN Văn Tinh', 'phu');
+
+  // Tuần: hai chi còn trống của tuần giáp chứa năm sinh.
+  const decadeStartChi = (sexagenaryIndex(yCC.canIndex, yCC.chiIndex) -
+    (sexagenaryIndex(yCC.canIndex, yCC.chiIndex) % 10)) % 12;
+  const tuan: [number, number] = [mod12(decadeStartChi + 10), mod12(decadeStartChi + 11)];
+  const triet = TRIET[yCC.canIndex % 5] as [number, number];
+
   // Tứ hóa: attach to the star wherever it sits.
   const [hLoc, hQuyen, hKhoa, hKy] = TU_HOA[yCC.canIndex];
   const HOA_LABELS = ['Hóa Lộc', 'Hóa Quyền', 'Hóa Khoa', 'Hóa Kỵ'] as const;
@@ -387,6 +412,8 @@ export function laSoTuVi(
     banMenh: napAm(yCC.canIndex, yCC.chiIndex).name,
     menhIndex: menh,
     thanIndex: than,
+    tuan,
+    triet,
     palaces,
   };
 }
