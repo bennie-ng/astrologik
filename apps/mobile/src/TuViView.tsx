@@ -108,7 +108,165 @@ function wallInZone(utcMs: number, tz: string): number {
   return Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute);
 }
 
-export type TimeMethod = 'diaPhuong' | 'quyDoiVN' | 'matTroi';
+/** Curated birthplace database: VN provinces/cities + major diaspora cities. */
+export interface City {
+  name: string;
+  tz: string;
+  off: number; // standard offset, minutes
+  lon: number;
+}
+
+const VN = (name: string, lon: number): City => ({ name, tz: 'Asia/Ho_Chi_Minh', off: 420, lon });
+
+export const CITIES: ReadonlyArray<City> = [
+  VN('Hà Nội', 105.85),
+  VN('TP. Hồ Chí Minh (Sài Gòn)', 106.7),
+  VN('Hải Phòng', 106.68),
+  VN('Đà Nẵng', 108.22),
+  VN('Cần Thơ', 105.78),
+  VN('Huế', 107.59),
+  VN('Nha Trang', 109.19),
+  VN('Đà Lạt', 108.44),
+  VN('Buôn Ma Thuột', 108.05),
+  VN('Pleiku', 108.0),
+  VN('Kon Tum', 108.0),
+  VN('Quy Nhơn', 109.22),
+  VN('Tuy Hòa', 109.3),
+  VN('Phan Rang – Tháp Chàm', 108.99),
+  VN('Phan Thiết', 108.1),
+  VN('Vũng Tàu', 107.08),
+  VN('Biên Hòa', 106.82),
+  VN('Thủ Dầu Một (Bình Dương)', 106.65),
+  VN('Đồng Xoài (Bình Phước)', 106.89),
+  VN('Tây Ninh', 106.1),
+  VN('Tân An (Long An)', 106.41),
+  VN('Mỹ Tho', 106.36),
+  VN('Bến Tre', 106.38),
+  VN('Trà Vinh', 106.34),
+  VN('Vĩnh Long', 105.97),
+  VN('Cao Lãnh (Đồng Tháp)', 105.63),
+  VN('Long Xuyên (An Giang)', 105.44),
+  VN('Châu Đốc', 105.11),
+  VN('Rạch Giá (Kiên Giang)', 105.08),
+  VN('Phú Quốc', 103.96),
+  VN('Vị Thanh (Hậu Giang)', 105.47),
+  VN('Sóc Trăng', 105.97),
+  VN('Bạc Liêu', 105.72),
+  VN('Cà Mau', 105.15),
+  VN('Quảng Ngãi', 108.8),
+  VN('Tam Kỳ (Quảng Nam)', 108.47),
+  VN('Hội An', 108.33),
+  VN('Đông Hà (Quảng Trị)', 107.1),
+  VN('Đồng Hới (Quảng Bình)', 106.62),
+  VN('Hà Tĩnh', 105.9),
+  VN('Vinh (Nghệ An)', 105.67),
+  VN('Thanh Hóa', 105.78),
+  VN('Ninh Bình', 105.97),
+  VN('Nam Định', 106.17),
+  VN('Thái Bình', 106.34),
+  VN('Hải Dương', 106.33),
+  VN('Hưng Yên', 106.05),
+  VN('Bắc Ninh', 106.05),
+  VN('Bắc Giang', 106.19),
+  VN('Hạ Long (Quảng Ninh)', 107.08),
+  VN('Móng Cái', 107.97),
+  VN('Lạng Sơn', 106.76),
+  VN('Cao Bằng', 106.26),
+  VN('Bắc Kạn', 105.83),
+  VN('Thái Nguyên', 105.84),
+  VN('Tuyên Quang', 105.21),
+  VN('Hà Giang', 104.98),
+  VN('Việt Trì (Phú Thọ)', 105.4),
+  VN('Vĩnh Yên (Vĩnh Phúc)', 105.6),
+  VN('Yên Bái', 104.87),
+  VN('Lào Cai', 103.97),
+  VN('Lai Châu', 103.45),
+  VN('Điện Biên Phủ', 103.02),
+  VN('Sơn La', 103.9),
+  VN('Hòa Bình', 105.34),
+  // Mỹ
+  { name: 'Los Angeles, Mỹ', tz: 'America/Los_Angeles', off: -480, lon: -118.24 },
+  { name: 'Westminster – Little Saigon, Mỹ', tz: 'America/Los_Angeles', off: -480, lon: -117.99 },
+  { name: 'San Jose, Mỹ', tz: 'America/Los_Angeles', off: -480, lon: -121.89 },
+  { name: 'San Francisco, Mỹ', tz: 'America/Los_Angeles', off: -480, lon: -122.42 },
+  { name: 'San Diego, Mỹ', tz: 'America/Los_Angeles', off: -480, lon: -117.16 },
+  { name: 'Sacramento, Mỹ', tz: 'America/Los_Angeles', off: -480, lon: -121.49 },
+  { name: 'Seattle, Mỹ', tz: 'America/Los_Angeles', off: -480, lon: -122.33 },
+  { name: 'Portland, Mỹ', tz: 'America/Los_Angeles', off: -480, lon: -122.68 },
+  { name: 'Las Vegas, Mỹ', tz: 'America/Los_Angeles', off: -480, lon: -115.14 },
+  { name: 'Phoenix, Mỹ', tz: 'America/Phoenix', off: -420, lon: -112.07 },
+  { name: 'Denver, Mỹ', tz: 'America/Denver', off: -420, lon: -104.99 },
+  { name: 'Dallas, Mỹ', tz: 'America/Chicago', off: -360, lon: -96.8 },
+  { name: 'Houston, Mỹ', tz: 'America/Chicago', off: -360, lon: -95.37 },
+  { name: 'Austin, Mỹ', tz: 'America/Chicago', off: -360, lon: -97.74 },
+  { name: 'Oklahoma City, Mỹ', tz: 'America/Chicago', off: -360, lon: -97.52 },
+  { name: 'New Orleans, Mỹ', tz: 'America/Chicago', off: -360, lon: -90.07 },
+  { name: 'Chicago, Mỹ', tz: 'America/Chicago', off: -360, lon: -87.63 },
+  { name: 'Minneapolis, Mỹ', tz: 'America/Chicago', off: -360, lon: -93.27 },
+  { name: 'Atlanta, Mỹ', tz: 'America/New_York', off: -300, lon: -84.39 },
+  { name: 'Miami, Mỹ', tz: 'America/New_York', off: -300, lon: -80.19 },
+  { name: 'Orlando, Mỹ', tz: 'America/New_York', off: -300, lon: -81.38 },
+  { name: 'Washington DC, Mỹ', tz: 'America/New_York', off: -300, lon: -77.04 },
+  { name: 'Philadelphia, Mỹ', tz: 'America/New_York', off: -300, lon: -75.17 },
+  { name: 'New York, Mỹ', tz: 'America/New_York', off: -300, lon: -74.01 },
+  { name: 'Boston, Mỹ', tz: 'America/New_York', off: -300, lon: -71.06 },
+  { name: 'Honolulu, Mỹ', tz: 'Pacific/Honolulu', off: -600, lon: -157.86 },
+  // Canada
+  { name: 'Vancouver, Canada', tz: 'America/Vancouver', off: -480, lon: -123.12 },
+  { name: 'Calgary, Canada', tz: 'America/Edmonton', off: -420, lon: -114.07 },
+  { name: 'Toronto, Canada', tz: 'America/Toronto', off: -300, lon: -79.38 },
+  { name: 'Ottawa, Canada', tz: 'America/Toronto', off: -300, lon: -75.7 },
+  { name: 'Montreal, Canada', tz: 'America/Toronto', off: -300, lon: -73.57 },
+  // Châu Âu
+  { name: 'London, Anh', tz: 'Europe/London', off: 0, lon: -0.13 },
+  { name: 'Paris, Pháp', tz: 'Europe/Paris', off: 60, lon: 2.35 },
+  { name: 'Berlin, Đức', tz: 'Europe/Berlin', off: 60, lon: 13.4 },
+  { name: 'Frankfurt, Đức', tz: 'Europe/Berlin', off: 60, lon: 8.68 },
+  { name: 'Munich, Đức', tz: 'Europe/Berlin', off: 60, lon: 11.58 },
+  { name: 'Hamburg, Đức', tz: 'Europe/Berlin', off: 60, lon: 9.99 },
+  { name: 'Praha (Prague), Séc', tz: 'Europe/Prague', off: 60, lon: 14.44 },
+  { name: 'Warszawa (Warsaw), Ba Lan', tz: 'Europe/Warsaw', off: 60, lon: 21.01 },
+  { name: 'Amsterdam, Hà Lan', tz: 'Europe/Amsterdam', off: 60, lon: 4.9 },
+  { name: 'Brussels, Bỉ', tz: 'Europe/Brussels', off: 60, lon: 4.35 },
+  { name: 'Vienna, Áo', tz: 'Europe/Vienna', off: 60, lon: 16.37 },
+  { name: 'Roma (Rome), Ý', tz: 'Europe/Rome', off: 60, lon: 12.5 },
+  { name: 'Madrid, Tây Ban Nha', tz: 'Europe/Madrid', off: 60, lon: -3.7 },
+  { name: 'Moscow, Nga', tz: 'Europe/Moscow', off: 180, lon: 37.62 },
+  { name: 'Kyiv, Ukraina', tz: 'Europe/Kyiv', off: 120, lon: 30.52 },
+  // Châu Á – Thái Bình Dương
+  { name: 'Tokyo, Nhật Bản', tz: 'Asia/Tokyo', off: 540, lon: 139.69 },
+  { name: 'Osaka, Nhật Bản', tz: 'Asia/Tokyo', off: 540, lon: 135.5 },
+  { name: 'Seoul, Hàn Quốc', tz: 'Asia/Seoul', off: 540, lon: 126.98 },
+  { name: 'Đài Bắc (Taipei), Đài Loan', tz: 'Asia/Taipei', off: 480, lon: 121.56 },
+  { name: 'Cao Hùng (Kaohsiung), Đài Loan', tz: 'Asia/Taipei', off: 480, lon: 120.31 },
+  { name: 'Bắc Kinh, Trung Quốc', tz: 'Asia/Shanghai', off: 480, lon: 116.41 },
+  { name: 'Thượng Hải, Trung Quốc', tz: 'Asia/Shanghai', off: 480, lon: 121.47 },
+  { name: 'Quảng Châu, Trung Quốc', tz: 'Asia/Shanghai', off: 480, lon: 113.26 },
+  { name: 'Hồng Kông', tz: 'Asia/Hong_Kong', off: 480, lon: 114.17 },
+  { name: 'Ma Cao', tz: 'Asia/Macau', off: 480, lon: 113.54 },
+  { name: 'Singapore', tz: 'Asia/Singapore', off: 480, lon: 103.82 },
+  { name: 'Kuala Lumpur, Malaysia', tz: 'Asia/Kuala_Lumpur', off: 480, lon: 101.69 },
+  { name: 'Bangkok, Thái Lan', tz: 'Asia/Bangkok', off: 420, lon: 100.5 },
+  { name: 'Viêng Chăn, Lào', tz: 'Asia/Vientiane', off: 420, lon: 102.63 },
+  { name: 'Phnom Penh, Campuchia', tz: 'Asia/Phnom_Penh', off: 420, lon: 104.92 },
+  { name: 'Manila, Philippines', tz: 'Asia/Manila', off: 480, lon: 120.98 },
+  { name: 'Jakarta, Indonesia', tz: 'Asia/Jakarta', off: 420, lon: 106.85 },
+  { name: 'Sydney, Úc', tz: 'Australia/Sydney', off: 600, lon: 151.21 },
+  { name: 'Melbourne, Úc', tz: 'Australia/Melbourne', off: 600, lon: 144.96 },
+  { name: 'Brisbane, Úc', tz: 'Australia/Brisbane', off: 600, lon: 153.03 },
+  { name: 'Adelaide, Úc', tz: 'Australia/Adelaide', off: 570, lon: 138.6 },
+  { name: 'Perth, Úc', tz: 'Australia/Perth', off: 480, lon: 115.86 },
+  { name: 'Auckland, New Zealand', tz: 'Pacific/Auckland', off: 720, lon: 174.76 },
+];
+
+/** Diacritic-insensitive search key. */
+const searchKey = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd')
+    .toLowerCase();
 
 /**
  * Equation of time in minutes for a given date (NOAA approximation):
@@ -123,14 +281,10 @@ function equationOfTime(y: number, m: number, d: number): number {
 
 /**
  * Resolve the birth datetime (mid-hour, local clock at the birth place)
- * for chart computation. DST at the birth place/date is found via Intl.
- *
- * - 'diaPhuong' (default, majority school): keep the local date and giờ
- *   chi, only stripping any daylight-saving offset back to standard time.
- * - 'quyDoiVN': convert the instant to Vietnam time (GMT+7).
- * - 'matTroi': true solar time — local standard time corrected by the
- *   birthplace longitude (4 min/degree from the zone meridian) plus the
- *   equation of time, so giờ Ngọ is actual solar noon.
+ * as true solar time: DST (found via Intl) is stripped to standard
+ * time, then corrected by the birthplace longitude (4 min/degree from
+ * the zone meridian) plus the equation of time — so giờ Ngọ is actual
+ * solar noon at the birthplace.
  */
 function toChartTime(
   d: number,
@@ -138,7 +292,6 @@ function toChartTime(
   y: number,
   hour: number,
   zone: { tz: string; off: number },
-  method: TimeMethod,
   lon: number,
 ) {
   const localWall = Date.UTC(y, m - 1, d, hour, 30);
@@ -154,20 +307,11 @@ function toChartTime(
   const offsetUsed = Math.round((localWall - utcMs) / 60000);
   const dstExtra = offsetUsed - zone.off;
   const standardWall = localWall - dstExtra * 60000;
-  let basis: number;
-  let solarCorr = 0;
-  if (method === 'quyDoiVN') {
-    basis = utcMs + 420 * 60000; // wall time in Vietnam
-  } else if (method === 'matTroi') {
-    const meridian = zone.off / 4; // zone meridian in degrees (15° per hour)
-    const st = new Date(standardWall);
-    const eot = equationOfTime(st.getUTCFullYear(), st.getUTCMonth() + 1, st.getUTCDate());
-    solarCorr = Math.round(4 * (lon - meridian) + eot);
-    basis = standardWall + solarCorr * 60000;
-  } else {
-    basis = standardWall; // local standard time
-  }
-  const t = new Date(basis);
+  const meridian = zone.off / 4; // zone meridian in degrees (15° per hour)
+  const st = new Date(standardWall);
+  const eot = equationOfTime(st.getUTCFullYear(), st.getUTCMonth() + 1, st.getUTCDate());
+  const solarCorr = Math.round(4 * (lon - meridian) + eot);
+  const t = new Date(standardWall + solarCorr * 60000);
   const minutes = t.getUTCHours() * 60 + t.getUTCMinutes();
   return {
     day: t.getUTCDate(),
@@ -200,19 +344,15 @@ interface FormState {
   month: string;
   year: string;
   hour: number;
+  /** Index into CITIES (ignored when manual) */
+  city: number;
+  /** Manual birthplace entry: pick a timezone + longitude yourself */
+  manual: boolean;
   tzIndex: number;
-  method: TimeMethod;
-  /** Birthplace longitude in degrees (only used by 'matTroi') */
   lon: string;
   gender: Gender;
   namXem: string;
 }
-
-const METHODS: ReadonlyArray<{ label: string; value: TimeMethod }> = [
-  { label: 'Giờ địa phương nơi sinh (khuyên dùng)', value: 'diaPhuong' },
-  { label: 'Quy đổi về giờ Việt Nam (GMT+7)', value: 'quyDoiVN' },
-  { label: 'Giờ mặt trời thực (theo kinh độ)', value: 'matTroi' },
-];
 
 /**
  * Module-level store so the form and the last computed chart survive
@@ -236,20 +376,26 @@ function computeResult(f: FormState) {
   if (!nx || nx < 1900 || nx > 2100) {
     return { error: 'Nhập năm xem hợp lệ (1900–2100).' } as const;
   }
-  const zone = TIMEZONES[f.tzIndex];
-  const lon = parseFloat(f.lon);
-  const lonUsed = Number.isFinite(lon) && lon >= -180 && lon <= 180 ? lon : zone.lon;
-  // f.hour is a giờ chi index; resolve via the band's midpoint clock hour.
-  const t = toChartTime(d, m, y, (f.hour * 2) % 24, zone, f.method, lonUsed);
-  let converted: string | null = null;
-  if (f.method === 'quyDoiVN' && f.tzIndex !== 0) {
-    converted = `Nơi sinh ${fmtOffset(t.offsetUsed)} → giờ Việt Nam: ${t.day}/${t.month}/${t.year} · Giờ ${CHI[t.hourChi]}`;
-  } else if (f.method === 'diaPhuong' && t.dstExtra !== 0) {
-    converted = `Đã trừ giờ mùa hè (DST): tính theo giờ chuẩn ${t.day}/${t.month}/${t.year} · Giờ ${CHI[t.hourChi]}`;
-  } else if (f.method === 'matTroi') {
-    const sign = t.solarCorr >= 0 ? '+' : '−';
-    converted = `Giờ mặt trời (kinh độ ${lonUsed}°${t.dstExtra !== 0 ? ', đã trừ DST' : ''}): hiệu chỉnh ${sign}${Math.abs(t.solarCorr)} phút → ${t.day}/${t.month}/${t.year} · Giờ ${CHI[t.hourChi]}`;
+  let zone: { tz: string; off: number };
+  let lonUsed: number;
+  let place: string;
+  if (f.manual) {
+    zone = TIMEZONES[f.tzIndex];
+    const lon = parseFloat(f.lon);
+    lonUsed = Number.isFinite(lon) && lon >= -180 && lon <= 180 ? lon : TIMEZONES[f.tzIndex].lon;
+    place = `kinh độ ${lonUsed}°`;
+  } else {
+    const c = CITIES[f.city];
+    zone = c;
+    lonUsed = c.lon;
+    place = c.name;
   }
+  // f.hour is a giờ chi index; resolve via the band's midpoint clock hour.
+  const t = toChartTime(d, m, y, (f.hour * 2) % 24, zone, lonUsed);
+  const sign = t.solarCorr >= 0 ? '+' : '−';
+  const warn =
+    Math.abs(t.solarCorr) > 90 ? ' ⚠ Hiệu chỉnh lớn bất thường — kiểm tra múi giờ và kinh độ.' : '';
+  const converted = `Giờ mặt trời tại ${place}${t.dstExtra !== 0 ? ' (đã trừ DST)' : ''}: hiệu chỉnh ${sign}${Math.abs(t.solarCorr)} phút → ${t.day}/${t.month}/${t.year} · Giờ ${CHI[t.hourChi]}${warn}`;
   return {
     chart: laSoTuVi(t.day, t.month, t.year, t.hourChi, f.gender, nx),
     converted,
@@ -269,8 +415,9 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
     month: String(initial.month),
     year: String(initial.year),
     hour: 0,
+    city: 0,
+    manual: false,
     tzIndex: 0,
-    method: 'diaPhuong',
     lon: '',
     gender: 'nam',
     namXem: String(new Date().getFullYear()),
@@ -331,30 +478,30 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
           theme={theme}
         />
 
-        <Text style={s.fieldLabel}>Nơi sinh (múi giờ)</Text>
-        <Dropdown
-          title="Nơi sinh (múi giờ)"
-          accessibilityLabel="Chọn múi giờ nơi sinh"
-          options={TIMEZONES.map((t) => t.label)}
-          value={tzIndex}
-          onChange={(i) => set('tzIndex', i)}
+        <Text style={s.fieldLabel}>Nơi sinh (thành phố)</Text>
+        <CityPicker
+          value={form.manual ? -1 : form.city}
+          onSelect={(i) => {
+            set('city', i);
+            set('manual', false);
+          }}
+          onManual={() => set('manual', true)}
           s={s}
           theme={theme}
         />
 
-        <Text style={s.fieldLabel}>Cách tính giờ sinh</Text>
-        <Dropdown
-          title="Cách tính giờ sinh"
-          accessibilityLabel="Chọn cách tính giờ sinh"
-          options={METHODS.map((m) => m.label)}
-          value={METHODS.findIndex((m) => m.value === form.method)}
-          onChange={(i) => set('method', METHODS[i].value)}
-          s={s}
-          theme={theme}
-        />
-
-        {form.method === 'matTroi' && (
+        {form.manual && (
           <>
+            <Text style={s.fieldLabel}>Múi giờ nơi sinh</Text>
+            <Dropdown
+              title="Múi giờ nơi sinh"
+              accessibilityLabel="Chọn múi giờ nơi sinh"
+              options={TIMEZONES.map((t) => t.label)}
+              value={tzIndex}
+              onChange={(i) => set('tzIndex', i)}
+              s={s}
+              theme={theme}
+            />
             <Text style={s.fieldLabel}>Kinh độ nơi sinh (°)</Text>
             <TextInput
               style={[s.input, { marginBottom: 4 }]}
@@ -366,8 +513,8 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
               accessibilityLabel="Kinh độ nơi sinh"
             />
             <Text style={s.lonHint}>
-              VD: Hà Nội 105.85 · TP.HCM 106.66 · Los Angeles −118.24 · Paris 2.35. Bỏ trống để
-              dùng kinh độ tiêu biểu của múi giờ.
+              Kinh độ đông là số dương, tây là số âm. VD: Cần Giờ 106.96 · Fresno −119.79. Bỏ
+              trống để dùng kinh độ tiêu biểu của múi giờ.
             </Text>
           </>
         )}
@@ -420,6 +567,96 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
         <Board chart={result.chart} name={result.name} s={s} theme={theme} />
       )}
     </ScrollView>
+  );
+}
+
+function CityPicker({
+  value,
+  onSelect,
+  onManual,
+  s,
+  theme,
+}: {
+  /** CITIES index, or -1 when manual entry is active */
+  value: number;
+  onSelect: (i: number) => void;
+  onManual: () => void;
+  s: any;
+  theme: Theme;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const matches = useMemo(() => {
+    const q = searchKey(query.trim());
+    if (!q) return CITIES.map((c, i) => [c, i] as const);
+    return CITIES.map((c, i) => [c, i] as const).filter(([c]) => searchKey(c.name).includes(q));
+  }, [query]);
+  return (
+    <>
+      <Pressable
+        style={s.dropdown}
+        onPress={() => {
+          setQuery('');
+          setOpen(true);
+        }}
+        accessibilityLabel="Chọn nơi sinh"
+        accessibilityRole="combobox"
+      >
+        <Text style={s.dropdownText} numberOfLines={1}>
+          {value >= 0 ? CITIES[value].name : 'Nhập thủ công (múi giờ + kinh độ)'}
+        </Text>
+        <Ionicons name="chevron-down" size={16} color={theme.color.text.tertiary} />
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={s.modalBackdrop} onPress={() => setOpen(false)}>
+          <Pressable style={s.modalSheet} onPress={() => {}}>
+            <Text style={s.modalTitle}>Nơi sinh</Text>
+            <TextInput
+              style={s.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Tìm thành phố… (vd: da nang, san jose)"
+              placeholderTextColor={theme.color.text.disabled}
+              autoFocus
+              accessibilityLabel="Tìm thành phố"
+            />
+            <ScrollView style={{ maxHeight: 380 }} keyboardShouldPersistTaps="handled">
+              <Pressable
+                style={[s.modalOption, value < 0 && s.modalOptionOn]}
+                onPress={() => {
+                  onManual();
+                  setOpen(false);
+                }}
+              >
+                <Text style={[s.modalOptionText, value < 0 && s.modalOptionTextOn]}>
+                  ✎ Không tìm thấy? Nhập thủ công…
+                </Text>
+              </Pressable>
+              {matches.map(([c, i]) => (
+                <Pressable
+                  key={c.name}
+                  style={[s.modalOption, i === value && s.modalOptionOn]}
+                  onPress={() => {
+                    onSelect(i);
+                    setOpen(false);
+                  }}
+                >
+                  <Text style={[s.modalOptionText, i === value && s.modalOptionTextOn]}>
+                    {c.name}
+                  </Text>
+                  {i === value && (
+                    <Ionicons name="checkmark" size={16} color={theme.color.text.accent} />
+                  )}
+                </Pressable>
+              ))}
+              {matches.length === 0 && (
+                <Text style={s.noMatch}>Không có kết quả — dùng "Nhập thủ công" ở trên.</Text>
+              )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -765,6 +1002,25 @@ const styles = (t: Theme, isWide: boolean) =>
       ...t.type.caption,
       color: t.color.text.tertiary,
       marginBottom: t.space.md,
+    } as object,
+    searchInput: {
+      borderWidth: 1.5,
+      borderColor: t.color.border.strong,
+      borderRadius: t.radius.input,
+      paddingHorizontal: t.space.md,
+      paddingVertical: t.space.sm,
+      fontSize: 15,
+      ...t.face.regular,
+      color: t.color.text.primary,
+      backgroundColor: t.color.bg.elevated,
+      marginHorizontal: t.space.sm,
+      marginBottom: t.space.sm,
+    },
+    noMatch: {
+      ...t.type.caption,
+      color: t.color.text.tertiary,
+      textAlign: 'center',
+      padding: t.space.lg,
     } as object,
     fieldLabel: { ...t.type.micro, color: t.color.text.tertiary, marginBottom: 6 } as object,
     input: {
