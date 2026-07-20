@@ -124,13 +124,72 @@ const TU_HOA: ReadonlyArray<readonly [string, string, string, string]> = [
   ['Phá Quân', 'Cự Môn', 'Thái Âm', 'Tham Lang'], // Quý
 ];
 
-/** Year-chi triads → [Hỏa Tinh start, Linh Tinh start, Thiên Mã, Đào Hoa]. */
-function chiGroup(yearChi: number): { hoa: number; linh: number; ma: number; dao: number } {
-  if ([8, 0, 4].includes(yearChi)) return { hoa: 2, linh: 10, ma: 2, dao: 9 }; // Thân Tý Thìn
-  if ([2, 6, 10].includes(yearChi)) return { hoa: 1, linh: 3, ma: 8, dao: 3 }; // Dần Ngọ Tuất
-  if ([5, 9, 1].includes(yearChi)) return { hoa: 3, linh: 10, ma: 11, dao: 6 }; // Tỵ Dậu Sửu
-  return { hoa: 9, linh: 10, ma: 5, dao: 0 }; // Hợi Mão Mùi
+/** Year-chi triads → [Hỏa Tinh start, Linh Tinh start, Thiên Mã, Đào Hoa, Hoa Cái, Kiếp Sát]. */
+function chiGroup(yearChi: number): {
+  hoa: number;
+  linh: number;
+  ma: number;
+  dao: number;
+  cai: number;
+  kiepSat: number;
+} {
+  if ([8, 0, 4].includes(yearChi))
+    return { hoa: 2, linh: 10, ma: 2, dao: 9, cai: 4, kiepSat: 5 }; // Thân Tý Thìn
+  if ([2, 6, 10].includes(yearChi))
+    return { hoa: 1, linh: 3, ma: 8, dao: 3, cai: 10, kiepSat: 11 }; // Dần Ngọ Tuất
+  if ([5, 9, 1].includes(yearChi))
+    return { hoa: 3, linh: 10, ma: 11, dao: 6, cai: 1, kiepSat: 2 }; // Tỵ Dậu Sửu
+  return { hoa: 9, linh: 10, ma: 5, dao: 0, cai: 7, kiepSat: 8 }; // Hợi Mão Mùi
 }
+
+/** Cô Thần / Quả Tú by year-chi season group. */
+function coQua(yearChi: number): [number, number] {
+  if ([2, 3, 4].includes(yearChi)) return [5, 1]; // Dần Mão Thìn → Tỵ / Sửu
+  if ([5, 6, 7].includes(yearChi)) return [8, 4]; // Tỵ Ngọ Mùi → Thân / Thìn
+  if ([8, 9, 10].includes(yearChi)) return [11, 7]; // Thân Dậu Tuất → Hợi / Mùi
+  return [2, 10]; // Hợi Tý Sửu → Dần / Tuất
+}
+
+/** Lưu Hà by year-can index. */
+const LUU_HA = [9, 10, 7, 8, 5, 6, 4, 3, 11, 2];
+/** Thiên Trù by year-can index. */
+const THIEN_TRU = [5, 6, 0, 5, 6, 8, 2, 6, 9, 10];
+/** Thiên Quan quý nhân by year-can index. */
+const THIEN_QUAN = [7, 4, 5, 2, 3, 9, 11, 9, 10, 6];
+/** Thiên Phúc quý nhân by year-can index. */
+const THIEN_PHUC = [9, 8, 0, 11, 3, 2, 6, 5, 6, 5];
+
+/** Vòng Thái Tuế, thuận từ Thái Tuế (chi năm). */
+const VONG_THAI_TUE = [
+  'Thái Tuế',
+  'Thiếu Dương',
+  'Tang Môn',
+  'Thiếu Âm',
+  'Quan Phù',
+  'Tử Phù',
+  'Tuế Phá',
+  'Long Đức',
+  'Bạch Hổ',
+  'Phúc Đức',
+  'Điếu Khách',
+  'Trực Phù',
+];
+
+/** Vòng Bác Sĩ, khởi từ Lộc Tồn, thuận với dương nam/âm nữ. */
+const VONG_BAC_SI = [
+  'Bác Sĩ',
+  'Lực Sĩ',
+  'Thanh Long',
+  'Tiểu Hao',
+  'Tướng Quân',
+  'Tấu Thư',
+  'Phi Liêm',
+  'Hỷ Thần',
+  'Bệnh Phù',
+  'Đại Hao',
+  'Phục Binh',
+  'Quan Phủ',
+];
 
 const mod12 = (n: number) => ((n % 12) + 12) % 12;
 
@@ -224,9 +283,65 @@ export function laSoTuVi(
   put(grp.linh + h, 'Linh Tinh', 'phu');
   put(grp.ma, 'Thiên Mã', 'phu');
   put(grp.dao, 'Đào Hoa', 'phu');
+  put(grp.cai, 'Hoa Cái', 'phu');
+  put(grp.kiepSat, 'Kiếp Sát', 'phu');
   const hongLoan = mod12(3 - yCC.chiIndex);
   put(hongLoan, 'Hồng Loan', 'phu');
   put(hongLoan + 6, 'Thiên Hỷ', 'phu');
+
+  // Theo can năm.
+  put(LUU_HA[yCC.canIndex], 'Lưu Hà', 'phu');
+  put(THIEN_TRU[yCC.canIndex], 'Thiên Trù', 'phu');
+  put(THIEN_QUAN[yCC.canIndex], 'Thiên Quan', 'phu');
+  put(THIEN_PHUC[yCC.canIndex], 'Thiên Phúc', 'phu');
+  put(lt + 8, 'Quốc Ấn', 'phu');
+  put(lt - 7, 'Đường Phù', 'phu');
+
+  // Theo chi năm.
+  const yc = yCC.chiIndex;
+  put(4 + yc, 'Long Trì', 'phu');
+  put(10 - yc, 'Phượng Các', 'phu');
+  put(10 - yc, 'Giải Thần', 'phu');
+  put(6 - yc, 'Thiên Khốc', 'phu');
+  put(6 + yc, 'Thiên Hư', 'phu');
+  put(9 + yc, 'Thiên Đức', 'phu');
+  put(5 + yc, 'Nguyệt Đức', 'phu');
+  put(yc + 1, 'Thiên Không', 'phu');
+  const [coThan, quaTu] = coQua(yc);
+  put(coThan, 'Cô Thần', 'phu');
+  put(quaTu, 'Quả Tú', 'phu');
+  put([5, 1, 9][yc % 3], 'Phá Toái', 'phu');
+  VONG_THAI_TUE.forEach((name, i) => put(yc + i, name, 'phu'));
+
+  // Theo tháng.
+  put(9 + (m - 1), 'Thiên Hình', 'phu');
+  put(1 + (m - 1), 'Thiên Riêu', 'phu');
+  put(1 + (m - 1), 'Thiên Y', 'phu');
+  put(8 + (m - 1), 'Thiên Giải', 'phu');
+  put(7 + (m - 1), 'Địa Giải', 'phu');
+
+  // Theo giờ.
+  put(4 + h + 2, 'Thai Phụ', 'phu');
+  put(4 + h - 2, 'Phong Cáo', 'phu');
+
+  // Theo ngày (từ Tả/Hữu, Xương/Khúc).
+  const d = lunar.day;
+  put(4 + (m - 1) + (d - 1), 'Tam Thai', 'phu');
+  put(10 - (m - 1) - (d - 1), 'Bát Tọa', 'phu');
+  put(10 - h + (d - 1) - 1, 'Ân Quang', 'phu');
+  put(4 + h - (d - 1) + 1, 'Thiên Quý', 'phu');
+
+  // Theo Mệnh/Thân và chi năm.
+  put(menh + yc, 'Thiên Tài', 'phu');
+  put(than + yc, 'Thiên Thọ', 'phu');
+  put(yc - (m - 1) + h, 'Đẩu Quân', 'phu');
+
+  // Vòng Bác Sĩ khởi từ Lộc Tồn, thuận nếu dương nam/âm nữ.
+  VONG_BAC_SI.forEach((name, i) => put(thuan ? lt + i : lt - i, name, 'phu'));
+
+  // Thiên Thương tại Nô Bộc, Thiên Sứ tại Tật Ách.
+  put(menh + 5, 'Thiên Thương', 'phu');
+  put(menh + 7, 'Thiên Sứ', 'phu');
 
   // Tứ hóa: attach to the star wherever it sits.
   const [hLoc, hQuyen, hKhoa, hKy] = TU_HOA[yCC.canIndex];

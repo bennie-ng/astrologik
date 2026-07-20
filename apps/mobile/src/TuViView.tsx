@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,9 +9,12 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { CHI, laSoTuVi, type Gender, type TuViChart, type TuViPalace } from 'lunar-core';
+import { Ionicons } from '@expo/vector-icons';
+import { CHI, HOUR_RANGES, laSoTuVi, type Gender, type TuViChart } from 'lunar-core';
 import { useTheme } from './design';
 import type { Theme } from './design';
+
+const hourLabel = (i: number) => `${CHI[i]} (${HOUR_RANGES[i].replace('-', ' – ')})`;
 
 /** Grid placement of the 12 chi palaces: [row, col] in a 4×4 board. */
 const GRID_POS: Record<number, [number, number]> = {
@@ -62,17 +66,7 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
         </View>
 
         <Text style={s.fieldLabel}>Giờ sinh</Text>
-        <View style={s.hourWrap}>
-          {CHI.map((chi, i) => (
-            <Pressable
-              key={chi}
-              onPress={() => setHourChi(i)}
-              style={[s.hourChip, i === hourChi && s.hourChipOn]}
-            >
-              <Text style={[s.hourChipText, i === hourChi && s.hourChipTextOn]}>{chi}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <HourDropdown value={hourChi} onChange={setHourChi} s={s} theme={theme} />
 
         <View style={s.genderRow}>
           {(['nam', 'nu'] as const).map((g) => (
@@ -97,6 +91,59 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
         <Board chart={chart} s={s} theme={theme} />
       )}
     </ScrollView>
+  );
+}
+
+function HourDropdown({
+  value,
+  onChange,
+  s,
+  theme,
+}: {
+  value: number;
+  onChange: (i: number) => void;
+  s: any;
+  theme: Theme;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Pressable
+        style={s.dropdown}
+        onPress={() => setOpen(true)}
+        accessibilityLabel="Chọn giờ sinh"
+        accessibilityRole="combobox"
+      >
+        <Text style={s.dropdownText}>{hourLabel(value)}</Text>
+        <Ionicons name="chevron-down" size={16} color={theme.color.text.tertiary} />
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={s.modalBackdrop} onPress={() => setOpen(false)}>
+          <View style={s.modalSheet}>
+            <Text style={s.modalTitle}>Giờ sinh</Text>
+            <ScrollView style={{ maxHeight: 420 }}>
+              {CHI.map((_, i) => (
+                <Pressable
+                  key={i}
+                  style={[s.modalOption, i === value && s.modalOptionOn]}
+                  onPress={() => {
+                    onChange(i);
+                    setOpen(false);
+                  }}
+                >
+                  <Text style={[s.modalOptionText, i === value && s.modalOptionTextOn]}>
+                    {hourLabel(i)}
+                  </Text>
+                  {i === value && (
+                    <Ionicons name="checkmark" size={16} color={theme.color.text.accent} />
+                  )}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -131,7 +178,7 @@ function Board({ chart, s, theme }: { chart: TuViChart; s: any; theme: Theme }) 
                     {st.hoa ? <Text style={s.starHoa}> {st.hoa}</Text> : null}
                   </Text>
                 ))}
-              <Text style={s.starMinor} numberOfLines={4}>
+              <Text style={s.starMinor} numberOfLines={8}>
                 {p.stars
                   .filter((st) => st.kind === 'phu')
                   .map((st) => st.name + (st.hoa ? ` (${st.hoa})` : ''))
@@ -225,18 +272,51 @@ const styles = (t: Theme, isWide: boolean) =>
       color: t.color.text.primary,
       backgroundColor: t.color.bg.elevated,
     },
-    hourWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: t.space.md },
-    hourChip: {
-      borderRadius: t.radius.full,
-      borderWidth: 1,
+    dropdown: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderWidth: 1.5,
       borderColor: t.color.border.strong,
+      borderRadius: t.radius.input,
       paddingHorizontal: t.space.md,
-      paddingVertical: 6,
+      paddingVertical: t.space.md,
       backgroundColor: t.color.bg.elevated,
+      marginBottom: t.space.md,
     },
-    hourChipOn: { backgroundColor: t.color.accent.solid, borderColor: t.color.accent.solid },
-    hourChipText: { ...t.type.label, color: t.color.text.secondary } as object,
-    hourChipTextOn: { color: t.color.text.onAccent },
+    dropdownText: { fontSize: 16, ...t.face.semibold, color: t.color.text.primary } as object,
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: t.space.lg,
+    },
+    modalSheet: {
+      backgroundColor: t.color.bg.surface,
+      borderRadius: t.radius.modal,
+      padding: t.space.sm,
+      width: '100%',
+      maxWidth: 360,
+      ...t.shadow.floating,
+    },
+    modalTitle: {
+      ...t.type.headline,
+      color: t.color.text.primary,
+      textAlign: 'center',
+      paddingVertical: t.space.md,
+    } as object,
+    modalOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: t.space.lg,
+      paddingVertical: t.space.md,
+      borderRadius: t.radius.input,
+    },
+    modalOptionOn: { backgroundColor: t.color.bg.accentSoft },
+    modalOptionText: { ...t.type.body, color: t.color.text.primary } as object,
+    modalOptionTextOn: { ...t.face.semibold, color: t.color.text.accent } as object,
     genderRow: {
       flexDirection: 'row',
       backgroundColor: t.color.bg.elevated,
@@ -294,7 +374,8 @@ const styles = (t: Theme, isWide: boolean) =>
     starMajor: { fontSize: isWide ? 12 : 8.5, ...t.face.semibold, color: t.color.text.primary } as object,
     starHoa: { color: t.color.text.lunar, ...t.face.semibold } as object,
     starMinor: {
-      fontSize: isWide ? 10 : 7,
+      fontSize: isWide ? 9.5 : 6.5,
+      lineHeight: isWide ? 13 : 9,
       ...t.face.regular,
       color: t.color.text.secondary,
       marginTop: 1,

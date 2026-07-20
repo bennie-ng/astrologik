@@ -93,4 +93,45 @@ describe('laSoTuVi', () => {
     expect(chart.hourName).toBe('Giờ Tý');
     expect(CHI[chart.menhIndex]).toBe('Dần');
   });
+
+  const at = (name: string) =>
+    chart.palaces.findIndex((p) => p.stars.some((s) => s.name === name));
+
+  it('vòng Thái Tuế khởi tại chi năm (Tý), đủ 12 sao thuận', () => {
+    expect(at('Thái Tuế')).toBe(0);
+    expect(at('Tang Môn')).toBe(2);
+    expect(at('Tuế Phá')).toBe(6);
+    expect(at('Bạch Hổ')).toBe(8);
+  });
+
+  it('vòng Bác Sĩ khởi tại Lộc Tồn, thuận với Dương Nam', () => {
+    expect(at('Bác Sĩ')).toBe(at('Lộc Tồn'));
+    expect(at('Lực Sĩ')).toBe((at('Lộc Tồn') + 1) % 12);
+    expect(at('Quan Phủ')).toBe((at('Lộc Tồn') + 11) % 12);
+  });
+
+  it('Thiên Thương tại Nô Bộc, Thiên Sứ tại Tật Ách', () => {
+    expect(chart.palaces[at('Thiên Thương')].cung).toBe('Nô Bộc');
+    expect(chart.palaces[at('Thiên Sứ')].cung).toBe('Tật Ách');
+  });
+
+  it('sao theo chi năm Tý: Long Trì Thìn, Phượng Các Tuất, Hoa Cái Thìn, Đào Hoa Dậu', () => {
+    expect(at('Long Trì')).toBe(4);
+    expect(at('Phượng Các')).toBe(10);
+    expect(at('Giải Thần')).toBe(at('Phượng Các'));
+    expect(at('Hoa Cái')).toBe(4);
+    expect(at('Đào Hoa')).toBe(9);
+  });
+
+  it('Tam Thai/Bát Tọa ngày 1 trùng Tả Phù/Hữu Bật', () => {
+    expect(at('Tam Thai')).toBe(at('Tả Phù'));
+    expect(at('Bát Tọa')).toBe(at('Hữu Bật'));
+  });
+
+  it('places the full star set (90 stars)', () => {
+    const total = chart.palaces.reduce((n, p) => n + p.stars.length, 0);
+    expect(total).toBe(90);
+    const names = chart.palaces.flatMap((p) => p.stars.map((s) => s.name));
+    expect(new Set(names).size).toBe(90); // no duplicates
+  });
 });
