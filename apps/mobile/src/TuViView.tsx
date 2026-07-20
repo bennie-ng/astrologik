@@ -411,8 +411,45 @@ function CenterRow({ label, value, s }: { label: string; value: string; s: any }
   );
 }
 
+function MinorColumn({
+  items,
+  cap,
+  right,
+  s,
+  theme,
+}: {
+  items: ColItem[];
+  cap: number;
+  right?: boolean;
+  s: any;
+  theme: Theme;
+}) {
+  const overflow = items.length - cap;
+  const shown = overflow > 0 ? items.slice(0, cap - 1) : items;
+  return (
+    <View style={s.minorCol}>
+      {shown.map((it) => (
+        <Text
+          key={it.name}
+          style={[s.starMinor, right && s.starMinorHung, { color: starColor(it, theme) }]}
+          numberOfLines={1}
+        >
+          {it.name}
+        </Text>
+      ))}
+      {overflow > 0 && (
+        <Text style={[s.starMinor, s.minorMore, right && s.starMinorHung]}>
+          +{overflow + 1} sao…
+        </Text>
+      )}
+    </View>
+  );
+}
+
 function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: any; theme: Theme }) {
   const [detail, setDetail] = useState<number | null>(null);
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
   return (
     <View style={s.boardWrap}>
       <View style={s.board}>
@@ -455,30 +492,13 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
                 ))}
               {(() => {
                 const cols = columns(p.stars);
+                const majors = p.stars.filter((st) => st.kind === 'chinh').length;
+                // Phone cells are fixed-height; cap rows so lines never overlap.
+                const cap = isWide ? 99 : majors >= 2 ? 3 : majors === 1 ? 4 : 5;
                 return (
                   <View style={s.minorRow}>
-                    <View style={s.minorCol}>
-                      {cols.cat.map((it) => (
-                        <Text
-                          key={it.name}
-                          style={[s.starMinor, { color: starColor(it, theme) }]}
-                          numberOfLines={1}
-                        >
-                          {it.name}
-                        </Text>
-                      ))}
-                    </View>
-                    <View style={s.minorCol}>
-                      {cols.hung.map((it) => (
-                        <Text
-                          key={it.name}
-                          style={[s.starMinor, s.starMinorHung, { color: starColor(it, theme) }]}
-                          numberOfLines={1}
-                        >
-                          {it.name}
-                        </Text>
-                      ))}
-                    </View>
+                    <MinorColumn items={cols.cat} cap={cap} s={s} theme={theme} />
+                    <MinorColumn items={cols.hung} cap={cap} right s={s} theme={theme} />
                   </View>
                 );
               })()}
@@ -776,6 +796,8 @@ const styles = (t: Theme, isWide: boolean) =>
       textTransform: 'uppercase',
       textAlign: 'center',
       marginBottom: 1,
+      flexShrink: 1,
+      minWidth: 0,
     } as object,
     cungRow: {
       flexDirection: 'row',
@@ -794,22 +816,26 @@ const styles = (t: Theme, isWide: boolean) =>
       borderRadius: 3,
       paddingHorizontal: 3,
       overflow: 'hidden',
+      flexShrink: 0,
     } as object,
     starMajor: {
       fontSize: isWide ? 12 : 8.5,
       ...t.face.bold,
       textAlign: 'center',
       textTransform: 'uppercase',
+      flexShrink: 0,
     } as object,
     starHoa: { color: t.color.text.lunar, ...t.face.semibold } as object,
-    minorRow: { flexDirection: 'row', flex: 1, gap: 2, marginTop: 1 },
+    minorRow: { flexDirection: 'row', flex: 1, gap: 2, marginTop: 1, overflow: 'hidden' },
     minorCol: { flex: 1, minWidth: 0 },
     starMinor: {
       fontSize: isWide ? 9.5 : 6.5,
       lineHeight: isWide ? 13 : 9,
+      flexShrink: 0,
       ...t.face.medium,
     } as object,
     starMinorHung: { textAlign: 'right' },
+    minorMore: { color: t.color.text.tertiary, ...t.face.semibold } as object,
     palaceTrangSinh: {
       fontSize: isWide ? 10 : 7,
       ...t.face.medium,
