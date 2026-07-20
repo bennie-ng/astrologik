@@ -69,25 +69,25 @@ const hourLabel = (chi: number) =>
  * resolved automatically per birth year via Intl. `off` is only the
  * standard-offset fallback for runtimes without time-zone data.
  */
-const TIMEZONES: ReadonlyArray<{ label: string; tz: string; off: number }> = [
-  { label: 'Việt Nam (GMT+7)', tz: 'Asia/Ho_Chi_Minh', off: 420 },
-  { label: 'Singapore, Malaysia', tz: 'Asia/Singapore', off: 480 },
-  { label: 'Đài Loan', tz: 'Asia/Taipei', off: 480 },
-  { label: 'Trung Quốc', tz: 'Asia/Shanghai', off: 480 },
-  { label: 'Nhật Bản', tz: 'Asia/Tokyo', off: 540 },
-  { label: 'Hàn Quốc', tz: 'Asia/Seoul', off: 540 },
-  { label: 'Úc — Sydney, Melbourne', tz: 'Australia/Sydney', off: 600 },
-  { label: 'Úc — Perth', tz: 'Australia/Perth', off: 480 },
-  { label: 'New Zealand', tz: 'Pacific/Auckland', off: 720 },
-  { label: 'Anh', tz: 'Europe/London', off: 0 },
-  { label: 'Đức, Pháp, Séc, Ba Lan', tz: 'Europe/Berlin', off: 60 },
-  { label: 'Nga — Moscow', tz: 'Europe/Moscow', off: 180 },
-  { label: 'Ấn Độ', tz: 'Asia/Kolkata', off: 330 },
-  { label: 'Mỹ — bờ Đông, Canada (Toronto)', tz: 'America/New_York', off: -300 },
-  { label: 'Mỹ — miền Trung (Chicago, Houston)', tz: 'America/Chicago', off: -360 },
-  { label: 'Mỹ — miền núi (Denver)', tz: 'America/Denver', off: -420 },
-  { label: 'Mỹ — bờ Tây, Canada (Vancouver)', tz: 'America/Los_Angeles', off: -480 },
-  { label: 'Hawaii', tz: 'Pacific/Honolulu', off: -600 },
+const TIMEZONES: ReadonlyArray<{ label: string; tz: string; off: number; lon: number }> = [
+  { label: 'Việt Nam (GMT+7)', tz: 'Asia/Ho_Chi_Minh', off: 420, lon: 105.85 },
+  { label: 'Singapore, Malaysia', tz: 'Asia/Singapore', off: 480, lon: 103.82 },
+  { label: 'Đài Loan', tz: 'Asia/Taipei', off: 480, lon: 121.56 },
+  { label: 'Trung Quốc', tz: 'Asia/Shanghai', off: 480, lon: 121.47 },
+  { label: 'Nhật Bản', tz: 'Asia/Tokyo', off: 540, lon: 139.69 },
+  { label: 'Hàn Quốc', tz: 'Asia/Seoul', off: 540, lon: 126.98 },
+  { label: 'Úc — Sydney, Melbourne', tz: 'Australia/Sydney', off: 600, lon: 151.21 },
+  { label: 'Úc — Perth', tz: 'Australia/Perth', off: 480, lon: 115.86 },
+  { label: 'New Zealand', tz: 'Pacific/Auckland', off: 720, lon: 174.76 },
+  { label: 'Anh', tz: 'Europe/London', off: 0, lon: -0.13 },
+  { label: 'Đức, Pháp, Séc, Ba Lan', tz: 'Europe/Berlin', off: 60, lon: 13.4 },
+  { label: 'Nga — Moscow', tz: 'Europe/Moscow', off: 180, lon: 37.62 },
+  { label: 'Ấn Độ', tz: 'Asia/Kolkata', off: 330, lon: 88.36 },
+  { label: 'Mỹ — bờ Đông, Canada (Toronto)', tz: 'America/New_York', off: -300, lon: -74.01 },
+  { label: 'Mỹ — miền Trung (Chicago, Houston)', tz: 'America/Chicago', off: -360, lon: -87.63 },
+  { label: 'Mỹ — miền núi (Denver)', tz: 'America/Denver', off: -420, lon: -104.99 },
+  { label: 'Mỹ — bờ Tây, Canada (Vancouver)', tz: 'America/Los_Angeles', off: -480, lon: -118.24 },
+  { label: 'Hawaii', tz: 'Pacific/Honolulu', off: -600, lon: -157.86 },
 ];
 
 /** Wall-clock time of a UTC instant in an IANA zone, as a UTC-encoded ms value. */
@@ -108,7 +108,18 @@ function wallInZone(utcMs: number, tz: string): number {
   return Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute);
 }
 
-export type TimeMethod = 'diaPhuong' | 'quyDoiVN';
+export type TimeMethod = 'diaPhuong' | 'quyDoiVN' | 'matTroi';
+
+/**
+ * Equation of time in minutes for a given date (NOAA approximation):
+ * how far true solar time runs ahead of mean solar time (±16 min).
+ */
+function equationOfTime(y: number, m: number, d: number): number {
+  const start = Date.UTC(y, 0, 1);
+  const N = Math.floor((Date.UTC(y, m - 1, d) - start) / 86400000) + 1;
+  const B = (2 * Math.PI * (N - 81)) / 364;
+  return 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
+}
 
 /**
  * Resolve the birth datetime (mid-hour, local clock at the birth place)
@@ -117,6 +128,9 @@ export type TimeMethod = 'diaPhuong' | 'quyDoiVN';
  * - 'diaPhuong' (default, majority school): keep the local date and giờ
  *   chi, only stripping any daylight-saving offset back to standard time.
  * - 'quyDoiVN': convert the instant to Vietnam time (GMT+7).
+ * - 'matTroi': true solar time — local standard time corrected by the
+ *   birthplace longitude (4 min/degree from the zone meridian) plus the
+ *   equation of time, so giờ Ngọ is actual solar noon.
  */
 function toChartTime(
   d: number,
@@ -125,6 +139,7 @@ function toChartTime(
   hour: number,
   zone: { tz: string; off: number },
   method: TimeMethod,
+  lon: number,
 ) {
   const localWall = Date.UTC(y, m - 1, d, hour, 30);
   let utcMs = localWall - zone.off * 60000;
@@ -138,10 +153,20 @@ function toChartTime(
   }
   const offsetUsed = Math.round((localWall - utcMs) / 60000);
   const dstExtra = offsetUsed - zone.off;
-  const basis =
-    method === 'quyDoiVN'
-      ? utcMs + 420 * 60000 // wall time in Vietnam
-      : localWall - dstExtra * 60000; // local standard time
+  const standardWall = localWall - dstExtra * 60000;
+  let basis: number;
+  let solarCorr = 0;
+  if (method === 'quyDoiVN') {
+    basis = utcMs + 420 * 60000; // wall time in Vietnam
+  } else if (method === 'matTroi') {
+    const meridian = zone.off / 4; // zone meridian in degrees (15° per hour)
+    const st = new Date(standardWall);
+    const eot = equationOfTime(st.getUTCFullYear(), st.getUTCMonth() + 1, st.getUTCDate());
+    solarCorr = Math.round(4 * (lon - meridian) + eot);
+    basis = standardWall + solarCorr * 60000;
+  } else {
+    basis = standardWall; // local standard time
+  }
   const t = new Date(basis);
   const minutes = t.getUTCHours() * 60 + t.getUTCMinutes();
   return {
@@ -151,6 +176,7 @@ function toChartTime(
     hourChi: Math.floor(((minutes + 60) % 1440) / 120),
     offsetUsed,
     dstExtra,
+    solarCorr,
   };
 }
 
@@ -176,6 +202,8 @@ interface FormState {
   hour: number;
   tzIndex: number;
   method: TimeMethod;
+  /** Birthplace longitude in degrees (only used by 'matTroi') */
+  lon: string;
   gender: Gender;
   namXem: string;
 }
@@ -183,6 +211,7 @@ interface FormState {
 const METHODS: ReadonlyArray<{ label: string; value: TimeMethod }> = [
   { label: 'Giờ địa phương nơi sinh (khuyên dùng)', value: 'diaPhuong' },
   { label: 'Quy đổi về giờ Việt Nam (GMT+7)', value: 'quyDoiVN' },
+  { label: 'Giờ mặt trời thực (theo kinh độ)', value: 'matTroi' },
 ];
 
 /**
@@ -207,13 +236,19 @@ function computeResult(f: FormState) {
   if (!nx || nx < 1900 || nx > 2100) {
     return { error: 'Nhập năm xem hợp lệ (1900–2100).' } as const;
   }
+  const zone = TIMEZONES[f.tzIndex];
+  const lon = parseFloat(f.lon);
+  const lonUsed = Number.isFinite(lon) && lon >= -180 && lon <= 180 ? lon : zone.lon;
   // f.hour is a giờ chi index; resolve via the band's midpoint clock hour.
-  const t = toChartTime(d, m, y, (f.hour * 2) % 24, TIMEZONES[f.tzIndex], f.method);
+  const t = toChartTime(d, m, y, (f.hour * 2) % 24, zone, f.method, lonUsed);
   let converted: string | null = null;
   if (f.method === 'quyDoiVN' && f.tzIndex !== 0) {
     converted = `Nơi sinh ${fmtOffset(t.offsetUsed)} → giờ Việt Nam: ${t.day}/${t.month}/${t.year} · Giờ ${CHI[t.hourChi]}`;
   } else if (f.method === 'diaPhuong' && t.dstExtra !== 0) {
     converted = `Đã trừ giờ mùa hè (DST): tính theo giờ chuẩn ${t.day}/${t.month}/${t.year} · Giờ ${CHI[t.hourChi]}`;
+  } else if (f.method === 'matTroi') {
+    const sign = t.solarCorr >= 0 ? '+' : '−';
+    converted = `Giờ mặt trời (kinh độ ${lonUsed}°${t.dstExtra !== 0 ? ', đã trừ DST' : ''}): hiệu chỉnh ${sign}${Math.abs(t.solarCorr)} phút → ${t.day}/${t.month}/${t.year} · Giờ ${CHI[t.hourChi]}`;
   }
   return {
     chart: laSoTuVi(t.day, t.month, t.year, t.hourChi, f.gender, nx),
@@ -228,20 +263,19 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
   const isWide = width >= 900;
   const s = useMemo(() => styles(theme, isWide), [theme, isWide]);
 
-  const [form, setForm] = useState<FormState>(
-    () =>
-      memory.form ?? {
-        name: '',
-        day: String(initial.day),
-        month: String(initial.month),
-        year: String(initial.year),
-        hour: 0,
-        tzIndex: 0,
-        method: 'diaPhuong',
-        gender: 'nam',
-        namXem: String(new Date().getFullYear()),
-      },
-  );
+  const [form, setForm] = useState<FormState>(() => ({
+    name: '',
+    day: String(initial.day),
+    month: String(initial.month),
+    year: String(initial.year),
+    hour: 0,
+    tzIndex: 0,
+    method: 'diaPhuong',
+    lon: '',
+    gender: 'nam',
+    namXem: String(new Date().getFullYear()),
+    ...(memory.form ?? {}),
+  }));
   const [submitted, setSubmitted] = useState<FormState | null>(memory.submitted);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -308,18 +342,33 @@ export default function TuViView({ initial }: { initial: { day: number; month: n
           theme={theme}
         />
 
-        {tzIndex !== 0 && (
+        <Text style={s.fieldLabel}>Cách tính giờ sinh</Text>
+        <Dropdown
+          title="Cách tính giờ sinh"
+          accessibilityLabel="Chọn cách tính giờ sinh"
+          options={METHODS.map((m) => m.label)}
+          value={METHODS.findIndex((m) => m.value === form.method)}
+          onChange={(i) => set('method', METHODS[i].value)}
+          s={s}
+          theme={theme}
+        />
+
+        {form.method === 'matTroi' && (
           <>
-            <Text style={s.fieldLabel}>Cách tính giờ sinh</Text>
-            <Dropdown
-              title="Cách tính giờ sinh"
-              accessibilityLabel="Chọn cách tính giờ sinh"
-              options={METHODS.map((m) => m.label)}
-              value={METHODS.findIndex((m) => m.value === form.method)}
-              onChange={(i) => set('method', METHODS[i].value)}
-              s={s}
-              theme={theme}
+            <Text style={s.fieldLabel}>Kinh độ nơi sinh (°)</Text>
+            <TextInput
+              style={[s.input, { marginBottom: 4 }]}
+              value={form.lon}
+              onChangeText={(t) => set('lon', t.replace(/[^0-9.\-]/g, ''))}
+              keyboardType="numbers-and-punctuation"
+              placeholder={String(TIMEZONES[tzIndex].lon)}
+              placeholderTextColor={theme.color.text.disabled}
+              accessibilityLabel="Kinh độ nơi sinh"
             />
+            <Text style={s.lonHint}>
+              VD: Hà Nội 105.85 · TP.HCM 106.66 · Los Angeles −118.24 · Paris 2.35. Bỏ trống để
+              dùng kinh độ tiêu biểu của múi giờ.
+            </Text>
           </>
         )}
 
@@ -711,6 +760,11 @@ const styles = (t: Theme, isWide: boolean) =>
       color: t.color.text.lunar,
       marginTop: t.space.md,
       textAlign: 'center',
+    } as object,
+    lonHint: {
+      ...t.type.caption,
+      color: t.color.text.tertiary,
+      marginBottom: t.space.md,
     } as object,
     fieldLabel: { ...t.type.micro, color: t.color.text.tertiary, marginBottom: 6 } as object,
     input: {
