@@ -17,6 +17,9 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
 const SITE_URL = process.env.SITE_URL || 'https://astrologik.app';
+// Google Analytics 4 measurement ID. Override or blank it out per build
+// with GA_MEASUREMENT_ID (empty string disables the tag entirely).
+const GA_ID = process.env.GA_MEASUREMENT_ID ?? 'G-MC8W407BM2';
 
 const TITLE = 'Astrologik – Lịch Vạn Niên, Lịch Âm Hôm Nay, Ngày Giờ Hoàng Đạo';
 const DESCRIPTION =
@@ -29,7 +32,18 @@ let html = readFileSync(htmlPath, 'utf8');
 html = html.replace('<html lang="en">', '<html lang="vi">');
 html = html.replace(/<title>.*?<\/title>/, `<title>${TITLE}</title>`);
 
-const head = `
+const analytics = GA_ID
+  ? `
+    <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '${GA_ID}');
+    </script>`
+  : '';
+
+const head = `${analytics}
     <meta name="description" content="${DESCRIPTION}" />
     <link rel="canonical" href="${SITE_URL}/" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#8A4B3C" />
