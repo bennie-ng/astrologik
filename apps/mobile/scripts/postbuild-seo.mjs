@@ -49,6 +49,7 @@ const head = `${analytics}
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#8A4B3C" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B0D10" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }</style>
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Astrologik" />
     <meta property="og:locale" content="vi_VN" />

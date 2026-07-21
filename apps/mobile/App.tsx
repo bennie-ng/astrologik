@@ -23,10 +23,11 @@ import MonthView from './src/MonthView';
 import YearView from './src/YearView';
 import DayDetail from './src/DayDetail';
 import Converter from './src/Converter';
+import TuViView from './src/TuViView';
 import { FadeIn, ThemeProvider, useTheme } from './src/design';
 import type { Theme } from './src/design';
 
-type Tab = 'calendar' | 'year' | 'day' | 'convert';
+type Tab = 'calendar' | 'year' | 'day' | 'convert' | 'tuvi';
 
 /** Breakpoint above which the desktop layout (top nav, side panel) applies. */
 export const WIDE_BREAKPOINT = 900;
@@ -142,6 +143,14 @@ function Shell() {
         theme={theme}
         showLabel={isWide}
       />
+      <TabButton
+        label="Tử vi"
+        icon="planet"
+        active={effectiveTab === 'tuvi'}
+        onPress={() => setTab('tuvi')}
+        theme={theme}
+        showLabel={isWide}
+      />
     </>
   );
 
@@ -149,7 +158,7 @@ function Shell() {
     <SafeAreaView style={s.root}>
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
 
-      <View style={s.appBar}>
+      <View style={[s.appBar, isWide && effectiveTab === 'tuvi' && s.contentWide]}>
         <Text style={s.appTitle}>Astrologik</Text>
         {isWide && <View style={s.topTabs}>{tabs}</View>}
         <Pressable onPress={toggle} style={s.themeBtn} accessibilityLabel="Đổi giao diện sáng/tối">
@@ -161,7 +170,10 @@ function Shell() {
         </Pressable>
       </View>
 
-      <FadeIn trigger={effectiveTab} style={s.content}>
+      <FadeIn
+        trigger={effectiveTab}
+        style={[s.content, isWide && effectiveTab === 'tuvi' && s.contentWide]}
+      >
         {effectiveTab === 'calendar' &&
           (isWide ? (
             <View style={s.splitRow}>
@@ -191,6 +203,7 @@ function Shell() {
         )}
         {effectiveTab === 'day' && <DayDetail info={selected} />}
         {effectiveTab === 'convert' && <Converter initial={today} />}
+        {effectiveTab === 'tuvi' && <TuViView initial={today} />}
       </FadeIn>
 
       {!isWide && (
@@ -290,6 +303,9 @@ const styles = (t: Theme, isWide: boolean) =>
       justifyContent: 'center',
     },
     content: { flex: 1, maxWidth: isWide ? 1160 : 560, width: '100%', alignSelf: 'center' },
+    // Tử vi uses a wide two-column layout, so it gets more room than the
+    // other tabs (which stay in a comfortable single-column reading width).
+    contentWide: { maxWidth: 1600 },
     splitRow: {
       flex: 1,
       flexDirection: 'row',
