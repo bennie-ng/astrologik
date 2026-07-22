@@ -9,6 +9,10 @@ the free lá số tử vi chart. **Design only — no implementation yet.**
 - [Non-Functional Requirements (NFR)](./NFR.md) — how well it must do it.
 - [Architecture Decision Records (ADR)](./adr/) — why the key choices were
   made.
+- [Verification Statement Bank](./verification-bank.md) — the deterministic,
+  no-LLM pre-payment questionnaire (design + starter content).
+- [Prompt Design](./prompt-design.md) — Fable 5 reading & Q&A prompts,
+  output contract, caching, guardrails.
 
 ## Decisions at a glance
 
@@ -61,7 +65,9 @@ account + a Vietnamese bank account · email sending-domain verification for
 
 ## Open questions for the next round
 
-- Exact verification **statement bank** contents (needs tử vi domain input).
-- Reading **section structure** and the Fable 5 **prompt** wording.
+- Domain review of the [verification statement bank](./verification-bank.md)
+  wording and coverage.
+- Final Vietnamese wording of the [prompt](./prompt-design.md) persona and
+  section prompts; whether to stream the reading.
 - Credit **bundle** sizes/prices and refund policy specifics.
 - Retention period for contact data.
