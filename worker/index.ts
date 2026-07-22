@@ -20,6 +20,13 @@ const SITE_URL = 'https://astrologik.app';
 const MIN_YEAR = 1900;
 const MAX_YEAR = 2100;
 
+/**
+ * Content revision date for the day-page template. Emitted as <lastmod>
+ * so it is stable across sitemap regenerations (the pages are otherwise
+ * deterministic). Bump when the day-page format or data changes.
+ */
+const CONTENT_REV = '2026-07-22';
+
 /** Google Analytics 4 measurement ID (shared with the SPA shell). */
 const GA_ID = 'G-MC8W407BM2';
 const GA_SNIPPET = GA_ID
@@ -48,6 +55,13 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** Serialize a JSON-LD object into a script tag, safe to embed in HTML. */
+function jsonLdScript(obj: unknown): string {
+  // Escape "<" so the payload cannot break out of the <script> element.
+  const json = JSON.stringify(obj).replace(/</g, '\\u003c');
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
 function dayPage(info: DayInfo): string {
   const { solar, lunar, canChi, element, dayStar, auspiciousHours, solarTerm, holidays } = info;
   const dateVN = vn(solar.day, solar.month, solar.year);
@@ -61,6 +75,30 @@ function dayPage(info: DayInfo): string {
   const prev = jdToDate(jdFromDate(solar.day, solar.month, solar.year) - 1);
   const next = jdToDate(jdFromDate(solar.day, solar.month, solar.year) + 1);
   const url = `${SITE_URL}/am-lich/${iso(solar.day, solar.month, solar.year)}`;
+
+  const jsonLd = jsonLdScript({
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebPage',
+        '@id': url,
+        url,
+        name: title,
+        description,
+        inLanguage: 'vi',
+        dateModified: CONTENT_REV,
+        isPartOf: { '@type': 'WebSite', name: 'Astrologik', url: `${SITE_URL}/` },
+        primaryImageOfPage: `${SITE_URL}/og-image.png`,
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Astrologik – Lịch Vạn Niên', item: `${SITE_URL}/` },
+          { '@type': 'ListItem', position: 2, name: title, item: url },
+        ],
+      },
+    ],
+  });
 
   const holidayHtml = holidays.length
     ? `<section><h2>Ngày lễ</h2><ul>${holidays
@@ -100,6 +138,7 @@ function dayPage(info: DayInfo): string {
   a{color:#8A4B3C}
   .app{display:block;text-align:center;background:#8A4B3C;color:#fff;text-decoration:none;border-radius:16px;padding:14px;margin-top:28px;font-weight:600}
 </style>
+${jsonLd}
 ${GA_SNIPPET}
 </head>
 <body>
@@ -143,12 +182,18 @@ ${GA_SNIPPET}
 
 function sitemap(): string {
   const { year } = todayVN();
-  const urls: string[] = [`  <url><loc>${SITE_URL}/</loc><changefreq>monthly</changefreq></url>`];
+  const urls: string[] = [
+    `  <url><loc>${SITE_URL}/</loc><lastmod>${CONTENT_REV}</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>`,
+  ];
   for (let y = year - 1; y <= year + 1; y++) {
     for (let m = 1; m <= 12; m++) {
       const days = jdFromDate(1, m === 12 ? 1 : m + 1, m === 12 ? y + 1 : y) - jdFromDate(1, m, y);
       for (let d = 1; d <= days; d++) {
-        urls.push(`  <url><loc>${SITE_URL}/am-lich/${iso(d, m, y)}</loc></url>`);
+        // Day pages are deterministic; lastmod tracks the template revision,
+        // not the request time, so it stays stable across regenerations.
+        urls.push(
+          `  <url><loc>${SITE_URL}/am-lich/${iso(d, m, y)}</loc><lastmod>${CONTENT_REV}</lastmod><changefreq>yearly</changefreq></url>`,
+        );
       }
     }
   }
