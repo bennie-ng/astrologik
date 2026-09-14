@@ -341,6 +341,57 @@ const GRID_POS: Record<number, [number, number]> = {
   2: [3, 0], 1: [3, 1], 0: [3, 2], 11: [3, 3],
 };
 
+/**
+ * Point where a palace cell touches the centre box, as a fraction (0–1)
+ * of the centre box: the inner corner for corner cells, the inner edge
+ * midpoint for edge cells.
+ */
+function centerAnchor(chi: number): [number, number] {
+  const [row, col] = GRID_POS[chi];
+  const inner = (v: number) => (Math.min(Math.max(v + 0.5, 1), 3) - 1) / 2;
+  return [inner(col), inner(row)];
+}
+
+/** Tam hợp triangle Mệnh – Tài Bạch – Quan Lộc, drawn across the centre box. */
+function TamHopLines({
+  chart,
+  size,
+  s,
+}: {
+  chart: TuViChart;
+  size: { width: number; height: number };
+  s: any;
+}) {
+  const pts = ['Mệnh', 'Tài Bạch', 'Quan Lộc'].map((cung) =>
+    centerAnchor(chart.palaces.find((p) => p.cung === cung)!.chiIndex),
+  );
+  return (
+    <>
+      {pts.map(([ax, ay], i) => {
+        const [bx, by] = pts[(i + 1) % 3];
+        const dx = (bx - ax) * size.width;
+        const dy = (by - ay) * size.height;
+        const len = Math.hypot(dx, dy);
+        return (
+          <View
+            key={i}
+            pointerEvents="none"
+            style={[
+              s.tamHopLine,
+              {
+                left: ((ax + bx) / 2) * size.width - len / 2,
+                top: ((ay + by) / 2) * size.height,
+                width: len,
+                transform: [{ rotate: `${Math.atan2(dy, dx)}rad` }],
+              },
+            ]}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 interface FormState {
   name: string;
   day: string;
@@ -822,6 +873,7 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
   const [detail, setDetail] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [centerSize, setCenterSize] = useState<{ width: number; height: number } | null>(null);
   const boardRef = useRef<View>(null);
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
@@ -896,7 +948,14 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
           );
         })}
 
-        <View style={s.center}>
+        <View
+          style={s.center}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setCenterSize({ width, height });
+          }}
+        >
+          {centerSize && <TamHopLines chart={chart} size={centerSize} s={s} />}
           <Text style={s.centerTitle} numberOfLines={1}>
             {name.trim() || 'Lá số tử vi'}
           </Text>
@@ -1305,6 +1364,12 @@ const styles = (t: Theme, isWide: boolean) =>
       backgroundColor: t.color.bg.elevated,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.color.border.subtle,
+    },
+    tamHopLine: {
+      position: 'absolute',
+      height: 1.5,
+      backgroundColor: t.color.text.accent,
+      opacity: 0.35,
     },
     centerTitle: {
       fontSize: isWide ? 16 : 12,
