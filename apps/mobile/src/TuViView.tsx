@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,6 +11,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import {
   BRIGHTNESS_NAME,
   CHI,
@@ -787,13 +790,57 @@ function MinorColumn({
   );
 }
 
+/** File name for the exported image, e.g. "la-so-tu-vi-nguyen-van-a-1990-05-12.png". */
+function exportFileName(chart: TuViChart, name: string): string {
+  const slug = searchKey(name.trim()).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const { day, month, year } = chart.input;
+  return `la-so-tu-vi-${slug ? slug + '-' : ''}${year}-${pad(month)}-${pad(day)}.png`;
+}
+
+/**
+ * Render the board to a PNG: downloaded on web, opened in the share sheet
+ * (which offers "Save Image") on iOS/Android.
+ */
+async function exportBoard(ref: React.RefObject<View | null>, fileName: string) {
+  if (Platform.OS === 'web') {
+    const uri = await captureRef(ref, { format: 'png', result: 'data-uri' });
+    const a = document.createElement('a');
+    a.href = uri;
+    a.download = fileName;
+    a.click();
+    return;
+  }
+  const uri = await captureRef(ref, { format: 'png', result: 'tmpfile', fileName });
+  await Sharing.shareAsync(uri, {
+    mimeType: 'image/png',
+    UTI: 'public.png',
+    dialogTitle: 'Lưu lá số',
+  });
+}
+
 function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: any; theme: Theme }) {
   const [detail, setDetail] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const boardRef = useRef<View>(null);
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
+
+  const onExport = async () => {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await exportBoard(boardRef, exportFileName(chart, name));
+    } catch {
+      setExportError('Không xuất được ảnh. Vui lòng thử lại.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <View style={s.boardWrap}>
-      <View style={s.board}>
+      <View ref={boardRef} style={s.board}>
         {chart.palaces.map((p) => {
           const [row, col] = GRID_POS[p.chiIndex];
           return (
@@ -886,6 +933,17 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
           <CenterRow label="Chủ thân" value={chart.thanChu} s={s} />
         </View>
       </View>
+      <Pressable
+        style={[s.exportBtn, exporting && { opacity: 0.5 }]}
+        onPress={onExport}
+        disabled={exporting}
+        accessibilityRole="button"
+        accessibilityLabel="Xuất lá số thành ảnh"
+      >
+        <Ionicons name="download-outline" size={18} color={theme.color.text.accent} />
+        <Text style={s.exportText}>{exporting ? 'Đang xuất…' : 'Xuất ảnh lá số'}</Text>
+      </Pressable>
+      {exportError && <Text style={s.error}>{exportError}</Text>}
       <PalaceSheet
         palace={detail !== null ? chart.palaces[detail] : null}
         chart={chart}
@@ -1128,6 +1186,22 @@ const styles = (t: Theme, isWide: boolean) =>
       marginTop: t.space.lg,
     },
     submitText: { ...t.type.headline, color: t.color.text.onAccent } as object,
+    exportBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: t.space.sm,
+      alignSelf: 'center',
+      borderWidth: 1.5,
+      borderColor: t.color.border.strong,
+      borderRadius: t.radius.button,
+      paddingVertical: t.space.sm + 2,
+      paddingHorizontal: t.space.lg,
+      marginTop: t.space.md,
+      marginBottom: t.space.sm,
+      backgroundColor: t.color.bg.surface,
+    },
+    exportText: { ...t.type.label, color: t.color.text.accent } as object,
 
     // Desktop: form as a fixed left column, board filling the rest.
     wideRow: { flexDirection: 'row', gap: t.space.lg, alignItems: 'flex-start' },
