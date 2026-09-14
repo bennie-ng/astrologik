@@ -791,11 +791,21 @@ function Dropdown({
 /** Hour range of a giờ chi, e.g. Tuất → "19h–21h". */
 const chiRange = (h: number) => `${(h * 2 + 23) % 24}h–${(h * 2 + 1) % 24}h`;
 
-function CenterRow({ label, value, s }: { label: string; value: string; s: any }) {
+function CenterRow({
+  label,
+  value,
+  wrap,
+  s,
+}: {
+  label: string;
+  value: string;
+  wrap?: boolean;
+  s: any;
+}) {
   return (
     <View style={s.centerRow}>
       <Text style={s.centerLabel}>{label}</Text>
-      <Text style={s.centerValue} numberOfLines={1}>
+      <Text style={s.centerValue} numberOfLines={wrap ? undefined : 1}>
         {value}
       </Text>
     </View>
@@ -807,6 +817,7 @@ function MinorColumn({
   cap,
   right,
   showDac,
+  wrap,
   s,
   theme,
 }: {
@@ -815,6 +826,8 @@ function MinorColumn({
   right?: boolean;
   /** Append the độ sáng letter — off on phones, where it would only truncate */
   showDac?: boolean;
+  /** Let long names wrap instead of truncating (export board) */
+  wrap?: boolean;
   s: any;
   theme: Theme;
 }) {
@@ -826,7 +839,7 @@ function MinorColumn({
         <Text
           key={it.name}
           style={[s.starMinor, right && s.starMinorHung, { color: starColor(it, theme) }]}
-          numberOfLines={1}
+          numberOfLines={wrap ? undefined : 1}
         >
           {it.name}
           {showDac && it.dac ? ` (${it.dac})` : ''}
@@ -837,6 +850,182 @@ function MinorColumn({
           +{overflow + 1} sao…
         </Text>
       )}
+    </View>
+  );
+}
+
+/**
+ * Contents of one palace cell. `full` (export board) shows every star
+ * with its độ sáng and lets text wrap; otherwise phone cells are capped
+ * and truncated to fit their fixed height.
+ */
+function PalaceContent({
+  p,
+  chart,
+  full,
+  isWide,
+  s,
+  theme,
+}: {
+  p: TuViChart['palaces'][number];
+  chart: TuViChart;
+  full?: boolean;
+  isWide: boolean;
+  s: any;
+  theme: Theme;
+}) {
+  const lines = full ? undefined : 1;
+  const showAll = full || isWide;
+  const cols = columns(p.stars, p.chiIndex);
+  const majors = p.stars.filter((st) => st.kind === 'chinh');
+  // Phone cells are fixed-height; cap rows so lines never overlap.
+  const cap = showAll ? 99 : majors.length >= 2 ? 6 : majors.length === 1 ? 7 : 8;
+  return (
+    <>
+      <View style={s.palaceHead}>
+        <Text style={s.palaceCanChi} numberOfLines={lines}>{p.canChi}</Text>
+        <Text style={s.palaceDaiVan}>{p.daiVan}</Text>
+      </View>
+      <View style={s.cungRow}>
+        <Text style={s.palaceCung} numberOfLines={lines}>
+          {p.cung}
+          {p.than ? ' · Thân' : ''}
+        </Text>
+        {chart.tuan.includes(p.chiIndex) && <Text style={s.tag}>TUẦN</Text>}
+        {chart.triet.includes(p.chiIndex) && <Text style={s.tag}>TRIỆT</Text>}
+      </View>
+      {majors.map((st) => (
+        <Text
+          key={st.name}
+          style={[s.starMajor, { color: starColor(st, theme) }]}
+          numberOfLines={lines}
+        >
+          {st.name}
+          {st.dac ? ` (${st.dac})` : ''}
+        </Text>
+      ))}
+      <View style={[s.minorRow, full && { flex: 0, flexBasis: 'auto' }]}>
+        <MinorColumn items={cols.cat} cap={cap} showDac={showAll} wrap={full} s={s} theme={theme} />
+        <MinorColumn
+          items={cols.hung}
+          cap={cap}
+          right
+          showDac={showAll}
+          wrap={full}
+          s={s}
+          theme={theme}
+        />
+      </View>
+      <Text style={[s.palaceTrangSinh, full && { marginTop: 'auto' }]}>{p.trangSinh}</Text>
+    </>
+  );
+}
+
+function CenterContent({
+  chart,
+  name,
+  full,
+  s,
+}: {
+  chart: TuViChart;
+  name: string;
+  full?: boolean;
+  s: any;
+}) {
+  return (
+    <>
+      <Text style={s.centerTitle} numberOfLines={full ? undefined : 1}>
+        {name.trim() || 'Lá số tử vi'}
+      </Text>
+      <View style={s.centerDivider} />
+      <CenterRow label="Năm" value={`${chart.input.year} · ${chart.yearCanChi}`} wrap={full} s={s} />
+      <CenterRow
+        label="Tháng"
+        value={`${chart.input.month} (âm ${chart.lunar.month}${chart.lunar.leap ? ' nhuận' : ''})`}
+        wrap={full}
+        s={s}
+      />
+      <CenterRow
+        label="Ngày"
+        value={`${chart.input.day} (âm ${chart.lunar.day}) · ${chart.dayCanChi}`}
+        wrap={full}
+        s={s}
+      />
+      <CenterRow
+        label="Giờ"
+        value={`${chart.hourCanChi} (${chiRange(chart.input.hourChi)})`}
+        wrap={full}
+        s={s}
+      />
+      {chart.namXem && (
+        <CenterRow
+          label="Năm xem"
+          value={`${chart.namXem.canChi} (${chart.namXem.year}) · ${chart.namXem.tuoi} tuổi`}
+          wrap={full}
+          s={s}
+        />
+      )}
+      <View style={s.centerDivider} />
+      <CenterRow label="Âm dương" value={chart.amDuong} wrap={full} s={s} />
+      <CenterRow label="Bản mệnh" value={chart.banMenh} wrap={full} s={s} />
+      <CenterRow label="Cục" value={chart.cuc.name} wrap={full} s={s} />
+      <CenterRow label="Sinh khắc" value={chart.cucRelation} wrap={full} s={s} />
+      <CenterRow label="Chủ mệnh" value={chart.menhChu} wrap={full} s={s} />
+      <CenterRow label="Chủ thân" value={chart.thanChu} wrap={full} s={s} />
+    </>
+  );
+}
+
+/** Width of the export image in layout points (scaled by device pixel ratio). */
+const EXPORT_WIDTH = 1100;
+
+/**
+ * Full-detail board used only for the exported image. Rendered
+ * off-screen at a fixed desktop width; rows grow with their content so
+ * nothing is capped or truncated.
+ */
+function ExportBoard({
+  chart,
+  name,
+  theme,
+  boardRef,
+}: {
+  chart: TuViChart;
+  name: string;
+  theme: Theme;
+  boardRef: React.RefObject<View | null>;
+}) {
+  const s = useMemo(() => styles(theme, true), [theme]);
+  const ex = useMemo(() => exportStyles(theme), [theme]);
+  const [centerSize, setCenterSize] = useState<{ width: number; height: number } | null>(null);
+  const cell = (chi: number) => {
+    const p = chart.palaces[chi];
+    return (
+      <View key={chi} style={[ex.cell, p.cung === 'Mệnh' && s.palaceMenh]}>
+        <PalaceContent p={p} chart={chart} full isWide s={s} theme={theme} />
+      </View>
+    );
+  };
+  return (
+    <View style={ex.offscreen} pointerEvents="none" aria-hidden>
+      <View ref={boardRef} collapsable={false} style={ex.board}>
+        <View style={ex.row}>{[5, 6, 7, 8].map(cell)}</View>
+        <View style={ex.row}>
+          <View style={ex.sideCol}>{[4, 3].map(cell)}</View>
+          <View
+            style={ex.center}
+            onLayout={(e) => {
+              const { width, height } = e.nativeEvent.layout;
+              setCenterSize({ width, height });
+            }}
+          >
+            {centerSize && <TamHopLines chart={chart} size={centerSize} s={s} />}
+            <CenterContent chart={chart} name={name} full s={s} />
+          </View>
+          <View style={ex.sideCol}>{[9, 10].map(cell)}</View>
+        </View>
+        <View style={ex.row}>{[2, 1, 0, 11].map(cell)}</View>
+      </View>
     </View>
   );
 }
@@ -861,7 +1050,14 @@ async function exportBoard(ref: React.RefObject<View | null>, fileName: string) 
     a.click();
     return;
   }
-  const uri = await captureRef(ref, { format: 'png', result: 'tmpfile', fileName });
+  const uri = await captureRef(ref, {
+    format: 'png',
+    result: 'tmpfile',
+    fileName,
+    // The export board sits off-screen; drawViewHierarchyInRect only
+    // renders what is visible on screen, renderInContext renders the layer.
+    useRenderInContext: true,
+  });
   await Sharing.shareAsync(uri, {
     mimeType: 'image/png',
     UTI: 'public.png',
@@ -892,7 +1088,7 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
 
   return (
     <View style={s.boardWrap}>
-      <View ref={boardRef} style={s.board}>
+      <View style={s.board}>
         {chart.palaces.map((p) => {
           const [row, col] = GRID_POS[p.chiIndex];
           return (
@@ -907,43 +1103,7 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
                 pressed && { backgroundColor: theme.color.bg.elevated },
               ]}
             >
-              <View style={s.palaceHead}>
-                <Text style={s.palaceCanChi} numberOfLines={1}>{p.canChi}</Text>
-                <Text style={s.palaceDaiVan}>{p.daiVan}</Text>
-              </View>
-              <View style={s.cungRow}>
-                <Text style={s.palaceCung} numberOfLines={1}>
-                  {p.cung}
-                  {p.than ? ' · Thân' : ''}
-                </Text>
-                {chart.tuan.includes(p.chiIndex) && <Text style={s.tag}>TUẦN</Text>}
-                {chart.triet.includes(p.chiIndex) && <Text style={s.tag}>TRIỆT</Text>}
-              </View>
-              {p.stars
-                .filter((st) => st.kind === 'chinh')
-                .map((st) => (
-                  <Text
-                    key={st.name}
-                    style={[s.starMajor, { color: starColor(st, theme) }]}
-                    numberOfLines={1}
-                  >
-                    {st.name}
-                    {st.dac ? ` (${st.dac})` : ''}
-                  </Text>
-                ))}
-              {(() => {
-                const cols = columns(p.stars, p.chiIndex);
-                const majors = p.stars.filter((st) => st.kind === 'chinh').length;
-                // Phone cells are fixed-height; cap rows so lines never overlap.
-                const cap = isWide ? 99 : majors >= 2 ? 6 : majors === 1 ? 7 : 8;
-                return (
-                  <View style={s.minorRow}>
-                    <MinorColumn items={cols.cat} cap={cap} showDac={isWide} s={s} theme={theme} />
-                    <MinorColumn items={cols.hung} cap={cap} right showDac={isWide} s={s} theme={theme} />
-                  </View>
-                );
-              })()}
-              <Text style={s.palaceTrangSinh}>{p.trangSinh}</Text>
+              <PalaceContent p={p} chart={chart} isWide={isWide} s={s} theme={theme} />
             </Pressable>
           );
         })}
@@ -956,42 +1116,10 @@ function Board({ chart, name, s, theme }: { chart: TuViChart; name: string; s: a
           }}
         >
           {centerSize && <TamHopLines chart={chart} size={centerSize} s={s} />}
-          <Text style={s.centerTitle} numberOfLines={1}>
-            {name.trim() || 'Lá số tử vi'}
-          </Text>
-          <View style={s.centerDivider} />
-          <CenterRow label="Năm" value={`${chart.input.year} · ${chart.yearCanChi}`} s={s} />
-          <CenterRow
-            label="Tháng"
-            value={`${chart.input.month} (âm ${chart.lunar.month}${chart.lunar.leap ? ' nhuận' : ''})`}
-            s={s}
-          />
-          <CenterRow
-            label="Ngày"
-            value={`${chart.input.day} (âm ${chart.lunar.day}) · ${chart.dayCanChi}`}
-            s={s}
-          />
-          <CenterRow
-            label="Giờ"
-            value={`${chart.hourCanChi} (${chiRange(chart.input.hourChi)})`}
-            s={s}
-          />
-          {chart.namXem && (
-            <CenterRow
-              label="Năm xem"
-              value={`${chart.namXem.canChi} (${chart.namXem.year}) · ${chart.namXem.tuoi} tuổi`}
-              s={s}
-            />
-          )}
-          <View style={s.centerDivider} />
-          <CenterRow label="Âm dương" value={chart.amDuong} s={s} />
-          <CenterRow label="Bản mệnh" value={chart.banMenh} s={s} />
-          <CenterRow label="Cục" value={chart.cuc.name} s={s} />
-          <CenterRow label="Sinh khắc" value={chart.cucRelation} s={s} />
-          <CenterRow label="Chủ mệnh" value={chart.menhChu} s={s} />
-          <CenterRow label="Chủ thân" value={chart.thanChu} s={s} />
+          <CenterContent chart={chart} name={name} s={s} />
         </View>
       </View>
+      <ExportBoard chart={chart} name={name} theme={theme} boardRef={boardRef} />
       <Pressable
         style={[s.exportBtn, exporting && { opacity: 0.5 }]}
         onPress={onExport}
@@ -1105,6 +1233,37 @@ function Field({
     </View>
   );
 }
+
+/** Layout of the off-screen export board; typography comes from `styles(t, true)`. */
+const exportStyles = (t: Theme) =>
+  StyleSheet.create({
+    // Negative offsets on both axes so it never extends the scrollable area.
+    offscreen: { position: 'absolute', left: -10000, top: -10000, width: EXPORT_WIDTH },
+    board: {
+      width: EXPORT_WIDTH,
+      backgroundColor: t.color.bg.surface,
+      borderWidth: 1,
+      borderColor: t.color.border.strong,
+    },
+    row: { flexDirection: 'row', alignItems: 'stretch' },
+    sideCol: { flex: 1 },
+    cell: {
+      flex: 1,
+      minHeight: EXPORT_WIDTH / 4,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.color.border.subtle,
+      padding: 8,
+    },
+    center: {
+      flex: 2,
+      justifyContent: 'center',
+      paddingHorizontal: t.space.xl,
+      paddingVertical: t.space.sm,
+      backgroundColor: t.color.bg.elevated,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.color.border.subtle,
+    },
+  });
 
 const styles = (t: Theme, isWide: boolean) =>
   StyleSheet.create({
